@@ -10,7 +10,7 @@
   4) สคริปต์จะ
        - คำนวณโมเดลใหม่ โดยเริ่มจากค่าอ้างอิงใน reference_model.json แล้วปรับด้วยข้อมูลจริง
        - ทดสอบความแม่นยำแบบ leave-one-out (เอาตัวอย่างออกทีละตัวแล้วทาย)
-       - เขียน model/model.json และอัปเดตโมเดลใน web/index.html + firmware/web_page.h
+       - เขียน model/model.json และอัปเดต web/model.js + firmware/web_page.h
   5) อัปโหลดโค้ดลง ESP32 ใหม่
 
 ใช้แค่ Python มาตรฐาน ไม่ต้องติดตั้งอะไรเพิ่ม
@@ -25,7 +25,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 REF = ROOT / "model" / "reference_model.json"
 OUT = ROOT / "model" / "model.json"
-WEB = ROOT / "web" / "index.html"
+WEB = ROOT / "web" / "model.js"
 
 PRIOR_WEIGHT = 3.0          # ค่าอ้างอิงมีน้ำหนักเท่ากับข้อมูลจริงกี่ตัวอย่าง
 MIN_STD = [0.08, 0.04, 0.5]  # ค่า std ต่ำสุด กันโมเดลมั่นใจเกินจริง
@@ -127,9 +127,9 @@ def main():
     html, k = re.subn(r"/\*MODEL_START\*/.*?/\*MODEL_END\*/",
                       lambda _: "/*MODEL_START*/" + block + "/*MODEL_END*/", html, flags=re.S)
     if k != 1:
-        sys.exit("หา MODEL_START/MODEL_END ใน web/index.html ไม่เจอ")
+        sys.exit("หา MODEL_START/MODEL_END ใน web/model.js ไม่เจอ")
     WEB.write_text(html, encoding="utf-8")
-    print("อัปเดตโมเดลใน web/index.html แล้ว")
+    print("อัปเดตโมเดลใน web/model.js แล้ว")
 
     sys.path.insert(0, str(ROOT / "tools"))
     import build_web

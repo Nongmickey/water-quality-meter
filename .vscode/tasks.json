@@ -1,0 +1,23 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "สร้างหน้าเว็บให้ ESP32",
+      "detail": "รวมไฟล์ในโฟลเดอร์ web/ เป็น firmware/water_quality_meter/web_page.h",
+      "type": "shell",
+      "command": "python3",
+      "windows": { "command": "python" },
+      "args": ["tools/build_web.py"],
+      "group": { "kind": "build", "isDefault": true },
+      "problemMatcher": []
+    },
+    {
+      "label": "เทรนโมเดลจาก model/samples.csv",
+      "type": "shell",
+      "command": "python3",
+      "windows": { "command": "python" },
+      "args": ["model/train.py", "model/samples.csv"],
+      "problemMatcher": []
+    }
+  ]
+}

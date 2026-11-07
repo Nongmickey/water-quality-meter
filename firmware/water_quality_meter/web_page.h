@@ -1,4 +1,4 @@
-// ไฟล์นี้สร้างอัตโนมัติจาก web/index.html ด้วย tools/build_web.py — อย่าแก้ไฟล์นี้โดยตรง
+// ไฟล์นี้สร้างอัตโนมัติจากโฟลเดอร์ web/ ด้วย tools/build_web.py — อย่าแก้ไฟล์นี้โดยตรง
 #pragma once
 #include <pgmspace.h>
 
@@ -99,6 +99,8 @@ header { display: flex; flex-wrap: wrap; align-items: end; justify-content: spac
 .field label { font-size: 13px; color: var(--muted); }
 .check { font-size: 13px; color: var(--muted); display: flex; gap: 6px; align-items: center; }
 .hint { font-size: 13px; color: var(--muted); }
+.dev-row { display: flex; flex-direction: column; gap: 6px; padding-top: 12px; border-top: 1px dashed var(--line); }
+.dev-row input { flex: 1 1 180px; }
 
 /* report slip */
 .slip { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
@@ -184,7 +186,8 @@ textarea { width: 100%; min-height: 120px; font: 12px/1.4 var(--font-num); backg
   .fill, .mark { transition: all .5s ease; }
 }
 </style>
-
+</head>
+<body>
 <div class="wrap">
   <header>
     <div>
@@ -211,6 +214,14 @@ textarea { width: 100%; min-height: 120px; font: 12px/1.4 var(--font-num); backg
       <div class="field"><label for="d-temp">อุณหภูมิ (°C)</label><input id="d-temp" type="number" step="0.1" min="0" max="60" value="29.4"><span class="check"><input type="checkbox" id="d-temp-off">ไม่ได้วัด</span></div>
     </div>
     <div class="row"><button class="primary" id="d-send">กดปุ่มเขียว (จำลอง)</button></div>
+    <div id="dev-row" class="dev-row">
+      <label for="dev-addr" class="eyebrow">ต่อกับเครื่องวัดจริง</label>
+      <div class="row">
+        <input id="dev-addr" type="text" inputmode="url" autocomplete="off" aria-describedby="dev-msg">
+        <button id="dev-connect">เชื่อมต่อ</button>
+      </div>
+      <span class="hint" id="dev-msg">ต่อคอมหรือมือถือเข้า WiFi “WaterMeter” ก่อน แล้วกดเชื่อมต่อ</span>
+    </div>
   </div>
 
   <div class="panel">
@@ -254,8 +265,8 @@ textarea { width: 100%; min-height: 120px; font: 12px/1.4 var(--font-num); backg
 </div>
 
 <script>
-/* ===== โมเดลประเมินแหล่งน้ำ (Gaussian Naive Bayes) =====
-   ส่วนระหว่าง MODEL_START/MODEL_END ถูกเขียนทับโดย model/train.py */
+/* โมเดลประเมินแหล่งน้ำ (Gaussian Naive Bayes)
+   ไฟล์นี้ถูกเขียนทับโดย model/train.py — ถ้าจะแก้ค่าอ้างอิง ให้แก้ model/reference_model.json */
 const MODEL = /*MODEL_START*/{
   "version": "ref-1",
   "trained_on": "ค่าอ้างอิงจากเอกสาร (ยังไม่ได้เทรนด้วยข้อมูลจริง)",
@@ -282,6 +293,8 @@ const MODEL = /*MODEL_START*/{
      "clue": "TDS สูงมากจนมักเกินช่วงของเซนเซอร์ เพราะมีเกลือจากน้ำทะเลปน"}
   ]
 }/*MODEL_END*/;
+</script>
+<script>
 
 /* ===== คณิตศาสตร์ ===== */
 function erfc(x) { // Abramowitz & Stegun 7.1.26
@@ -636,25 +649,46 @@ function newRecord(values, extra) {
   return Object.assign({ values, time: Date.now(), timeSource: "phone", location: $("loc").value.trim(), gps }, extra);
 }
 
-/* ===== เชื่อมต่อเครื่องวัด ===== */
-const isDevice = /^\d+\.\d+\.\d+\.\d+$/.test(location.hostname) || location.hostname.endsWith(".local");
+/* ===== เชื่อมต่อเครื่องวัด =====
+   - เปิดจาก ESP32 (http://192.168.4.1)     -> ใช้ API ของเครื่องเดียวกัน
+   - เปิดจาก VS Code (Live Server) / ไฟล์ตรง -> ต่อคอมเข้า WiFi "WaterMeter" แล้วระบบเรียก http://192.168.4.1 ให้เอง
+   - หาเครื่องไม่เจอ                         -> โหมดทดลอง (ใส่ค่าเอง) */
+const DEFAULT_DEVICE = "192.168.4.1";
+const canReachDevice = location.protocol !== "https:"; // เว็บ https เรียกเครื่องที่เป็น http ไม่ได้
+let apiBase = null;   // null = ยังไม่ได้ต่อเครื่อง
 let lastKey = null;
+let mode = "";
 
 function setConn(kind, text) { $("conn-dot").className = "dot " + kind; $("conn-text").textContent = text; }
 function setLive(v) { $("live-ph").textContent = f(v.ph, 2); $("live-tds").textContent = f(v.tds, 0); $("live-temp").textContent = f(v.temp, 1); }
 
-async function getJson(url, opts) {
-  const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 3000);
+async function getJson(url, opts, timeoutMs) {
+  const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), timeoutMs || 3000);
   try { const r = await fetch(url, Object.assign({ cache: "no-store", signal: ctl.signal }, opts)); return await r.json(); }
   finally { clearTimeout(t); }
 }
 
+function deviceAddr() {
+  return (store.get("wqm-device", DEFAULT_DEVICE) || DEFAULT_DEVICE).trim().replace(/^https?:\/\//, "").replace(/\/+$/, "");
+}
+
+async function findDevice() {
+  const list = [];
+  if (location.protocol === "http:") list.push("");        // หน้านี้อาจเปิดจาก ESP32 เอง
+  const remote = "http://" + deviceAddr();
+  if (location.origin !== remote) list.push(remote);
+  for (const base of list) {
+    try { const s = await getJson(base + "/api/state", {}, 2500); if (s && "live" in s) return base; } catch (e) { /* ลองที่อยู่ถัดไป */ }
+  }
+  return null;
+}
+
 async function poll() {
   try {
-    const s = await getJson("/api/state");
-    setConn("on", "เชื่อมต่อเครื่องวัดแล้ว");
+    const s = await getJson(apiBase + "/api/state");
+    setConn("on", "เชื่อมต่อเครื่องวัดแล้ว" + (apiBase ? " (" + apiBase.replace("http://", "") + ")" : ""));
     setLive(s.live);
-    if (!s.time_set) fetch("/api/time?epoch=" + Math.floor(Date.now() / 1000), { method: "POST" }).catch(() => {});
+    if (!s.time_set) fetch(apiBase + "/api/time?epoch=" + Math.floor(Date.now() / 1000), { method: "POST" }).catch(() => {});
     if (s.last) {
       const key = s.boot + "-" + s.last.id;
       if (key !== lastKey) {
@@ -675,8 +709,8 @@ async function poll() {
 }
 
 async function webMeasure() {
-  if (!isDevice) { demoSend(); return; }
-  try { await getJson("/api/measure", { method: "POST" }); } catch (e) { setConn("off", "สั่งวัดไม่สำเร็จ"); }
+  if (apiBase === null) { demoSend(); return; }
+  try { await getJson(apiBase + "/api/measure", { method: "POST" }, 8000); } catch (e) { setConn("off", "สั่งวัดไม่สำเร็จ"); }
 }
 
 /* ===== โหมดทดลอง ===== */
@@ -692,23 +726,45 @@ function demoSend() {
   setLive(v);
 }
 
-/* ===== เริ่มทำงาน ===== */
-$("model-info").textContent = `โมเดลประเมินแหล่งน้ำ: Naive Bayes รุ่น ${MODEL.version} · ข้อมูลที่ใช้: ${MODEL.trained_on}` +
-  (MODEL.accuracy !== null ? ` · ความแม่นยำจากการทดสอบ ${Math.round(MODEL.accuracy * 100)}% (${MODEL.samples} ตัวอย่าง)` : " · ยังไม่ได้วัดความแม่นยำกับข้อมูลจริง");
-renderHistory();
-
-if (isDevice) {
+function enterDeviceMode(base) {
+  apiBase = base;
+  mode = "device";
+  $("demo-panel").hidden = true;
   renderEmpty();
   poll();
-} else {
+}
+
+function enterDemoMode() {
+  if (mode === "demo") return;
+  mode = "demo";
   setConn("demo", "โหมดทดลอง (ไม่ได้ต่อเครื่องวัด)");
   $("demo-panel").hidden = false;
-  $("d-send").onclick = demoSend;
   const sample = { ph: 7.62, tds: 184, temp: 29.4 };
   setLive(sample);
   renderReport(newRecord(sample, { key: "example", label: "ตัวอย่าง", example: true, location: "ตัวอย่าง: ก๊อกน้ำในโรงเรียน" }));
 }
-</script>
 
+async function connect(manual) {
+  if (manual) $("dev-msg").textContent = "กำลังค้นหาเครื่องวัด…";
+  const base = await findDevice();
+  if (base !== null) { enterDeviceMode(base); return; }
+  enterDemoMode();
+  if (manual) $("dev-msg").textContent = "ไม่พบเครื่องวัดที่ " + deviceAddr() + " ตรวจว่าคอม/มือถือต่อ WiFi WaterMeter อยู่";
+  else if (canReachDevice) setTimeout(() => { if (mode === "demo") connect(false); }, 5000); // ลองหาใหม่เรื่อยๆ
+}
+
+/* ===== เริ่มทำงาน ===== */
+$("model-info").textContent = `โมเดลประเมินแหล่งน้ำ: Naive Bayes รุ่น ${MODEL.version} · ข้อมูลที่ใช้: ${MODEL.trained_on}` +
+  (MODEL.accuracy !== null ? ` · ความแม่นยำจากการทดสอบ ${Math.round(MODEL.accuracy * 100)}% (${MODEL.samples} ตัวอย่าง)` : " · ยังไม่ได้วัดความแม่นยำกับข้อมูลจริง");
+renderHistory();
+$("d-send").onclick = demoSend;
+$("dev-row").hidden = !canReachDevice;
+$("dev-addr").value = deviceAddr();
+$("dev-connect").onclick = () => { store.set("wqm-device", $("dev-addr").value); connect(true); };
+
+if (canReachDevice) { setConn("", "กำลังค้นหาเครื่องวัด…"); connect(false); }
+else enterDemoMode();
+</script>
+</body>
 </html>
 )WQMHTML";
