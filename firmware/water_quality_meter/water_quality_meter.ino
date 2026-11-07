@@ -19,7 +19,7 @@
 // ---------------- ขาที่ใช้ ----------------
 // ขาอนาล็อกต้องเป็นกลุ่ม ADC1 (32-39) เท่านั้น เพราะ ADC2 ใช้ไม่ได้ตอนเปิด WiFi
 const int PIN_TDS    = 34;  // TDS: ขา A
-const int PIN_PH     = 35;  // pH: ขา Po (ผ่านตัวแบ่งแรงดัน 10k/20k)
+const int PIN_PH     = 35;  // pH: ขา Po (ต่อตรง — ปรับให้ pH7 ≈ 2.5V)
 const int PIN_TEMP   = 32;  // NTC 10k (ต่อกับ 10k ไป 3V3)
 const int PIN_BUTTON = 15;  // ปุ่มกด (อีกขาต่อ GND)
 const int PIN_SDA    = 21;
@@ -30,7 +30,7 @@ const float VREF_MV         = 3300.0;  // แรงดันเลี้ยง�
 const float NTC_SERIES_OHM  = 10000.0; // ตัวต้านทานที่ต่อกับ NTC
 const float NTC_NOMINAL_OHM = 10000.0; // NTC 10k ที่ 25°C
 const float NTC_BETA        = 3950.0;  // ค่า B ของ NTC (ส่วนใหญ่ 3950)
-const float PH_DIVIDER      = 1.5;     // (10k + 20k) / 20k  → แรงดันจริง = ที่อ่านได้ x 1.5
+const float PH_DIVIDER      = 1.0;     // ต่อตรง = 1.0 / ถ้าใส่ตัวแบ่ง 10k+20k ให้แก้เป็น 1.5
 
 // ---------------- WiFi (ESP32 ปล่อย WiFi เอง) ----------------
 const char *AP_SSID = "WaterMeter";
@@ -98,6 +98,9 @@ float readTds(float tempC) {
 // ---------------- pH ----------------
 float readPh() {
   phMv = readMilliVoltsMedian(PIN_PH) * PH_DIVIDER;
+  if (PH_DIVIDER == 1.0 && phMv > 3100) {
+    Serial.println("คำเตือน: แรงดัน pH เกิน 3.1V! ปรับตัวปรับสีฟ้าบนบอร์ด pH ให้ต่ำลง");
+  }
   float slope = (7.0 - 4.0) / (phNeutralMv - phAcidMv);  // pH ต่อ mV
   float ph = 7.0 + slope * (phMv - phNeutralMv);
   return constrain(ph, 0.0, 14.0);
