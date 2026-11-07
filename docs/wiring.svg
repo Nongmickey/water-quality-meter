@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 780" width="900" height="780" font-family="Tahoma, 'Noto Sans Thai', sans-serif">
+<rect width="900" height="780" fill="#ffffff"/>
+<text x="30" y="40" font-size="22" fill="#102a32" text-anchor="start" font-weight="bold">แผนผังการต่อสาย · เครื่องวัดคุณภาพน้ำ ESP32</text>
+<polyline points="262,95 262,712" fill="none" stroke="#d64545" stroke-width="4" stroke-linejoin="round"/>
+<text x="262" y="88" font-size="12" fill="#d64545" text-anchor="middle" font-weight="bold">5V</text>
+<polyline points="296,95 296,712" fill="none" stroke="#e08a1e" stroke-width="4" stroke-linejoin="round"/>
+<text x="296" y="88" font-size="12" fill="#e08a1e" text-anchor="middle" font-weight="bold">3V3</text>
+<polyline points="330,95 330,712" fill="none" stroke="#2b2b2b" stroke-width="4" stroke-linejoin="round"/>
+<text x="330" y="88" font-size="12" fill="#2b2b2b" text-anchor="middle" font-weight="bold">GND</text>
+<rect x="40" y="70" width="190" height="660" rx="10" fill="#1d2f3a"/>
+<text x="135" y="700" font-size="22" fill="#ffffff" text-anchor="middle" font-weight="bold">ESP32</text>
+<text x="135" y="718" font-size="12" fill="#b8c7cd" text-anchor="middle">(บนบอร์ดขยาย)</text>
+<rect x="222" y="100" width="10" height="10" fill="#d9c27a"/>
+<text x="214" y="110" font-size="13" fill="#ffffff" text-anchor="end">VIN (5V)</text>
+<rect x="222" y="123" width="10" height="10" fill="#d9c27a"/>
+<text x="214" y="133" font-size="13" fill="#ffffff" text-anchor="end">GND</text>
+<rect x="222" y="146" width="10" height="10" fill="#d9c27a"/>
+<text x="214" y="156" font-size="13" fill="#ffffff" text-anchor="end">D21 (SDA)</text>
+<rect x="222" y="169" width="10" height="10" fill="#d9c27a"/>
+<text x="214" y="179" font-size="13" fill="#ffffff" text-anchor="end">D22 (SCL)</text>
+<rect x="222" y="240" width="10" height="10" fill="#d9c27a"/>
+<text x="214" y="250" font-size="13" fill="#ffffff" text-anchor="end">D15</text>
+<rect x="222" y="330" width="10" height="10" fill="#d9c27a"/>
+<text x="214" y="340" font-size="13" fill="#ffffff" text-anchor="end">3V3</text>
+<rect x="222" y="376" width="10" height="10" fill="#d9c27a"/>
+<text x="214" y="386" font-size="13" fill="#ffffff" text-anchor="end">D34</text>
+<rect x="222" y="486" width="10" height="10" fill="#d9c27a"/>
+<text x="214" y="496" font-size="13" fill="#ffffff" text-anchor="end">D35</text>
+<rect x="222" y="600" width="10" height="10" fill="#d9c27a"/>
+<text x="214" y="610" font-size="13" fill="#ffffff" text-anchor="end">D32</text>
+<rect x="540" y="88" width="320" height="107" rx="8" fill="#eef4f5" stroke="#0b7480" stroke-width="2"/>
+<text x="630" y="112" font-size="15" fill="#102a32" text-anchor="start" font-weight="bold">จอ LCD 20×4</text>
+<text x="630" y="132" font-size="12" fill="#587480" text-anchor="start">โมดูล I2C ด้านหลังจอ</text>
+<rect x="535" y="100" width="10" height="10" fill="#d9c27a"/>
+<text x="552" y="110" font-size="13" fill="#102a32" text-anchor="start" font-weight="bold">VCC</text>
+<rect x="535" y="123" width="10" height="10" fill="#d9c27a"/>
+<text x="552" y="133" font-size="13" fill="#102a32" text-anchor="start" font-weight="bold">GND</text>
+<rect x="535" y="146" width="10" height="10" fill="#d9c27a"/>
+<text x="552" y="156" font-size="13" fill="#102a32" text-anchor="start" font-weight="bold">SDA</text>
+<rect x="535" y="169" width="10" height="10" fill="#d9c27a"/>
+<text x="552" y="179" font-size="13" fill="#102a32" text-anchor="start" font-weight="bold">SCL</text>
+<rect x="540" y="222" width="320" height="70" rx="8" fill="#eef4f5" stroke="#0b7480" stroke-width="2"/>
+<text x="630" y="246" font-size="15" fill="#102a32" text-anchor="start" font-weight="bold">ปุ่มกดสีเขียว</text>
+<text x="630" y="266" font-size="12" fill="#587480" text-anchor="start">PNC XB7-EA.5 ใช้ขั้ว NO</text>
+<rect x="535" y="240" width="10" height="10" fill="#d9c27a"/>
+<text x="552" y="250" font-size="13" fill="#102a32" text-anchor="start" font-weight="bold">NO</text>
+<rect x="535" y="265" width="10" height="10" fill="#d9c27a"/>
+<text x="552" y="275" font-size="13" fill="#102a32" text-anchor="start" font-weight="bold">NO</text>
+<rect x="540" y="318" width="320" height="84" rx="8" fill="#eef4f5" stroke="#0b7480" stroke-width="2"/>
+<text x="630" y="342" font-size="15" fill="#102a32" text-anchor="start" font-weight="bold">TDS Meter V1.0</text>
+<text x="630" y="362" font-size="12" fill="#587480" text-anchor="start">สายหัววัดเสียบช่องขาว 2 ขา</text>
+<rect x="535" y="330" width="10" height="10" fill="#d9c27a"/>
+<text x="552" y="340" font-size="13" fill="#102a32" text-anchor="start" font-weight="bold">+</text>
+<rect x="535" y="353" width="10" height="10" fill="#d9c27a"/>
+<text x="552" y="363" font-size="13" fill="#102a32" text-anchor="start" font-weight="bold">−</text>
+<rect x="535" y="376" width="10" height="10" fill="#d9c27a"/>
+<text x="552" y="386" font-size="13" fill="#102a32" text-anchor="start" font-weight="bold">A</text>
+<rect x="540" y="428" width="320" height="84" rx="8" fill="#eef4f5" stroke="#0b7480" stroke-width="2"/>
+<text x="630" y="452" font-size="15" fill="#102a32" text-anchor="start" font-weight="bold">โมดูล pH</text>
+<text x="630" y="472" font-size="12" fill="#587480" text-anchor="start">หัววัดเสียบช่อง BNC</text>
+<rect x="535" y="440" width="10" height="10" fill="#d9c27a"/>
+<text x="552" y="450" font-size="13" fill="#102a32" text-anchor="start" font-weight="bold">V+</text>
+<rect x="535" y="463" width="10" height="10" fill="#d9c27a"/>
+<text x="552" y="473" font-size="13" fill="#102a32" text-anchor="start" font-weight="bold">G</text>
+<rect x="535" y="486" width="10" height="10" fill="#d9c27a"/>
+<text x="552" y="496" font-size="13" fill="#102a32" text-anchor="start" font-weight="bold">Po</text>
+<rect x="540" y="585" width="320" height="65" rx="8" fill="#eef4f5" stroke="#0b7480" stroke-width="2"/>
+<text x="630" y="609" font-size="15" fill="#102a32" text-anchor="start" font-weight="bold">หัววัดอุณหภูมิ</text>
+<text x="630" y="629" font-size="12" fill="#587480" text-anchor="start">NTC 10k (สาย 2 เส้น สลับได้)</text>
+<rect x="535" y="600" width="10" height="10" fill="#d9c27a"/>
+<text x="552" y="610" font-size="13" fill="#102a32" text-anchor="start" font-weight="bold">สาย 1</text>
+<rect x="535" y="625" width="10" height="10" fill="#d9c27a"/>
+<text x="552" y="635" font-size="13" fill="#102a32" text-anchor="start" font-weight="bold">สาย 2</text>
+<polyline points="230,105 540,105" fill="none" stroke="#d64545" stroke-width="3" stroke-linejoin="round"/>
+<circle cx="262" cy="105" r="5" fill="#d64545"/>
+<polyline points="230,128 540,128" fill="none" stroke="#2b2b2b" stroke-width="3" stroke-linejoin="round"/>
+<circle cx="330" cy="128" r="5" fill="#2b2b2b"/>
+<polyline points="230,335 540,335" fill="none" stroke="#e08a1e" stroke-width="3" stroke-linejoin="round"/>
+<circle cx="296" cy="335" r="5" fill="#e08a1e"/>
+<polyline points="540,358 330,358" fill="none" stroke="#2b2b2b" stroke-width="3" stroke-linejoin="round"/>
+<circle cx="330" cy="358" r="5" fill="#2b2b2b"/>
+<polyline points="540,445 262,445" fill="none" stroke="#d64545" stroke-width="3" stroke-linejoin="round"/>
+<circle cx="262" cy="445" r="5" fill="#d64545"/>
+<polyline points="540,468 330,468" fill="none" stroke="#2b2b2b" stroke-width="3" stroke-linejoin="round"/>
+<circle cx="330" cy="468" r="5" fill="#2b2b2b"/>
+<polyline points="540,270 330,270" fill="none" stroke="#2b2b2b" stroke-width="3" stroke-linejoin="round"/>
+<circle cx="330" cy="270" r="5" fill="#2b2b2b"/>
+<polyline points="230,151 540,151" fill="none" stroke="#2b6fd6" stroke-width="3" stroke-linejoin="round"/>
+<polyline points="230,174 540,174" fill="none" stroke="#8e44ad" stroke-width="3" stroke-linejoin="round"/>
+<polyline points="230,245 540,245" fill="none" stroke="#1d8a4a" stroke-width="3" stroke-linejoin="round"/>
+<polyline points="230,381 540,381" fill="none" stroke="#0b8a96" stroke-width="3" stroke-linejoin="round"/>
+<polyline points="540,491 230,491" fill="none" stroke="#a0522d" stroke-width="3" stroke-linejoin="round"/>
+<rect x="448.0" y="483" width="44" height="16" rx="3" fill="#f3e3c3" stroke="#6b4f1d" stroke-width="2"/>
+<text x="470.0" y="517" font-size="13" fill="#6b4f1d" text-anchor="middle" font-weight="bold">10kΩ</text>
+<polyline points="400,491 400,560 330,560" fill="none" stroke="#2b2b2b" stroke-width="3" stroke-linejoin="round"/>
+<rect x="392" y="508.0" width="16" height="44" rx="3" fill="#f3e3c3" stroke="#6b4f1d" stroke-width="2"/>
+<text x="414" y="535.0" font-size="13" fill="#6b4f1d" text-anchor="start" font-weight="bold">20kΩ</text>
+<circle cx="330" cy="560" r="5" fill="#2b2b2b"/>
+<circle cx="400" cy="491" r="5" fill="#111"/>
+<polyline points="540,605 230,605" fill="none" stroke="#c2185b" stroke-width="3" stroke-linejoin="round"/>
+<circle cx="420" cy="605" r="5" fill="#111"/>
+<polyline points="420,605 420,680 296,680" fill="none" stroke="#e08a1e" stroke-width="3" stroke-linejoin="round"/>
+<rect x="412" y="621.5" width="16" height="44" rx="3" fill="#f3e3c3" stroke="#6b4f1d" stroke-width="2"/>
+<text x="434" y="648.5" font-size="13" fill="#6b4f1d" text-anchor="start" font-weight="bold">10kΩ</text>
+<circle cx="296" cy="680" r="5" fill="#e08a1e"/>
+<polyline points="540,630 515,630 515,700 330,700" fill="none" stroke="#2b2b2b" stroke-width="3" stroke-linejoin="round"/>
+<circle cx="330" cy="700" r="5" fill="#2b2b2b"/>
+<text x="30" y="752" font-size="12.5" fill="#587480" text-anchor="start">● จุด = ต่อกัน · เส้นที่ตัดกันโดยไม่มีจุด = ไม่ต่อกัน · 10kΩ = น้ำตาล-ดำ-ส้ม-ทอง · 20kΩ = แดง-ดำ-ส้ม-ทอง (หรือใช้ 10kΩ 2 ตัวต่อกัน)</text>
+<text x="30" y="770" font-size="12.5" fill="#587480" text-anchor="start">ขาอนาล็อก (D32, D34, D35) ต้องอยู่กลุ่ม 32–39 เท่านั้น · จ่ายไฟผ่านสาย USB</text>
+</svg>

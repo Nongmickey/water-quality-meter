@@ -1,12 +1,15 @@
 /*
  * เครื่องวัดคุณภาพน้ำ (Water Quality Meter) — ESP32
  *
- * วัด: pH, TDS (ppm), อุณหภูมิน้ำ (NTC 10k แบบ 2 สาย)
- * แสดงผล: จอ LCD 20x4 (I2C) + หน้าเว็บผ่าน WiFi ของเครื่องเอง
- * ปุ่ม: กดสั้น = เปลี่ยนหน้าจอ
+ * การทำงาน
+ *   1) เซนเซอร์ pH, TDS, อุณหภูมิ วัดค่าตลอดเวลา แสดงบนจอ LCD 20x4
+ *      เซนเซอร์ตัวไหนไม่ได้ต่อ/ไม่ได้จุ่มน้ำ จะแสดงเป็น "-"
+ *   2) กดปุ่มสีเขียว -> ESP32 วัดค่าละเอียด (เฉลี่ยหลายรอบ) แล้วส่งผลไปที่หน้าเว็บ
+ *   3) หน้าเว็บ (เปิดจากมือถือ) วิเคราะห์น้ำ ประเมินแหล่งที่มา แสดงวันเวลาและสถานที่
  *
+ * หน้าเว็บอยู่ในไฟล์ web_page.h (สร้างจาก web/index.html ด้วย tools/build_web.py)
  * ไลบรารีที่ต้องติดตั้ง: "LiquidCrystal I2C" (by Frank de Brabander)
- * ดูวิธีต่อสายและวิธีคาลิเบรตใน README.md
+ * ดูวิธีต่อสายใน README.md และ docs/wiring.svg
  */
 
 #include <Wire.h>
@@ -15,114 +18,164 @@
 #include <Preferences.h>
 #include <LiquidCrystal_I2C.h>
 #include <math.h>
+#include "web_page.h"
 
-// ---------------- ขาที่ใช้ ----------------
-// ขาอนาล็อกต้องเป็นกลุ่ม ADC1 (32-39) เท่านั้น เพราะ ADC2 ใช้ไม่ได้ตอนเปิด WiFi
+// ================= ขาที่ใช้ =================
+// ขาอนาล็อกต้องอยู่กลุ่ม ADC1 (32-39) เพราะ ADC2 ใช้ไม่ได้ตอนเปิด WiFi
 const int PIN_TDS    = 34;  // TDS: ขา A
-const int PIN_PH     = 35;  // pH: ขา Po (ต่อตรง — ปรับให้ pH7 ≈ 2.5V)
-const int PIN_TEMP   = 32;  // NTC 10k (ต่อกับ 10k ไป 3V3)
-const int PIN_BUTTON = 15;  // ปุ่มกด (อีกขาต่อ GND)
+const int PIN_PH     = 35;  // pH: ขา Po ผ่านตัวแบ่งแรงดัน 10k/20k
+const int PIN_TEMP   = 32;  // NTC 10k + ตัวต้านทาน 10k ไป 3V3
+const int PIN_BUTTON = 15;  // ปุ่มเขียว (อีกขาต่อ GND)
 const int PIN_SDA    = 21;
 const int PIN_SCL    = 22;
 
-// ---------------- ค่าวงจร ----------------
-const float VREF_MV         = 3300.0;  // แรงดันเลี้ยงตัวแบ่งแรงดันของ NTC
-const float NTC_SERIES_OHM  = 10000.0; // ตัวต้านทานที่ต่อกับ NTC
-const float NTC_NOMINAL_OHM = 10000.0; // NTC 10k ที่ 25°C
-const float NTC_BETA        = 3950.0;  // ค่า B ของ NTC (ส่วนใหญ่ 3950)
-const float PH_DIVIDER      = 1.0;     // ต่อตรง = 1.0 / ถ้าใส่ตัวแบ่ง 10k+20k ให้แก้เป็น 1.5
+// ================= ค่าวงจร =================
+const float VREF_MV         = 3300.0;   // ไฟเลี้ยงตัวแบ่งแรงดัน NTC (3V3)
+const float NTC_SERIES_OHM  = 10000.0;  // ตัวต้านทานที่ต่อกับ NTC
+const float NTC_NOMINAL_OHM = 10000.0;  // NTC 10k ที่ 25°C
+const float NTC_BETA        = 3950.0;   // ค่า B ของ NTC
+const float PH_DIVIDER      = 1.5;      // (10k + 20k) / 20k
 
-// ---------------- WiFi (ESP32 ปล่อย WiFi เอง) ----------------
+// ค่าที่ใช้ตัดสินว่า "เซนเซอร์ไม่ได้ต่อ"
+const float NOISE_SPREAD_MV = 250.0;    // สัญญาณแกว่งเกินนี้ = สายลอย
+const float TDS_MIN_MV      = 10.0;     // ต่ำกว่านี้ = หัววัดไม่ได้จุ่มน้ำ
+const float PH_MIN_MV       = 150.0;    // ที่ขา ESP32, ต่ำกว่านี้ = ไม่ได้ต่อโมดูล pH
+const float ADC_MAX_MV      = 3150.0;   // ใกล้เพดาน ADC = ค่าเชื่อไม่ได้
+
+// ================= WiFi (ESP32 ปล่อย WiFi เอง) =================
 const char *AP_SSID = "WaterMeter";
-const char *AP_PASS = "12345678";      // อย่างน้อย 8 ตัวอักษร
+const char *AP_PASS = "12345678";        // อย่างน้อย 8 ตัวอักษร
 
-// ---------------- เกณฑ์คุณภาพน้ำ ----------------
-const float PH_MIN_OK  = 6.5;
-const float PH_MAX_OK  = 8.5;
-const float TDS_MAX_OK = 500.0;        // ppm (เกณฑ์น้ำดื่มทั่วไป)
-
-// ---------------- ตัวแปรระบบ ----------------
+// ================= ตัวแปรระบบ =================
 LiquidCrystal_I2C *lcd = nullptr;
 WebServer server(80);
 Preferences prefs;
 
-// ค่าคาลิเบรต (เก็บถาวรในหน่วยความจำ)
-float phNeutralMv = 2500.0;  // แรงดันโมดูล pH ในน้ำยา pH 7.00
-float phAcidMv    = 3030.0;  // แรงดันโมดูล pH ในน้ำยา pH 4.00
-float tdsK        = 1.0;     // ตัวคูณแก้ค่า TDS
+float phNeutralMv = 2500.0;  // แรงดันโมดูล pH (ก่อนแบ่ง) ในน้ำยา pH 7.00
+float phAcidMv    = 3030.0;  // แรงดันโมดูล pH (ก่อนแบ่ง) ในน้ำยา pH 4.00
+float tdsK        = 1.0;
 
-// ค่าล่าสุด
-float temperatureC = NAN;
-float tdsPpm  = NAN;
-float phValue = NAN;
-float tdsMv = 0, phMv = 0, tempMv = 0;
+struct Values {
+  float ph = NAN, tds = NAN, temp = NAN;
+};
+struct Sample {
+  float mv;      // ค่ากลาง
+  float spread;  // ความแกว่ง (max-min ของช่วงกลาง)
+};
 
-int page = 0;
-const int PAGE_COUNT = 3;
+Values live;                  // ค่าสด อัปเดตทุก 1 วินาที
+float rawTdsMv = 0, rawPhMv = 0, rawTempMv = 0;
 
-// ---------------- อ่าน ADC แบบกรองสัญญาณรบกวน ----------------
-float readMilliVoltsMedian(int pin) {
-  const int N = 21;
+// ผลที่ส่งจากการกดปุ่ม
+struct Reading {
+  uint32_t id = 0;
+  Values v;
+  uint32_t epoch = 0;  // เวลาจริง (ถ้ามือถือส่งเวลามาให้แล้ว) ไม่งั้น 0
+};
+Reading last;
+uint32_t bootId = 0;
+int64_t epochOffset = 0;      // epoch = millis()/1000 + epochOffset
+bool timeSet = false;
+
+String statusLine = "";
+unsigned long statusUntil = 0;
+unsigned long infoUntil = 0;
+
+// ================= อ่าน ADC =================
+Sample readPin(int pin) {
+  const int N = 25;
   int buf[N];
   for (int i = 0; i < N; i++) {
     buf[i] = analogReadMilliVolts(pin);
-    delay(2);
+    delayMicroseconds(800);
   }
-  // insertion sort แล้วเอาค่ากลาง
-  for (int i = 1; i < N; i++) {
+  for (int i = 1; i < N; i++) {  // insertion sort
     int v = buf[i], j = i - 1;
     while (j >= 0 && buf[j] > v) { buf[j + 1] = buf[j]; j--; }
     buf[j + 1] = v;
   }
-  return buf[N / 2];
+  Sample s;
+  s.mv = buf[N / 2];
+  s.spread = buf[N - 4] - buf[3];  // ตัดหัวท้ายกันค่ากระโดด
+  return s;
 }
 
-// ---------------- อุณหภูมิ (NTC) ----------------
+// ================= เซนเซอร์ =================
 float readTemperature() {
-  tempMv = readMilliVoltsMedian(PIN_TEMP);
-  if (tempMv < 50 || tempMv > VREF_MV - 50) return NAN;  // สายหลุด/ช็อต
-  float r = NTC_SERIES_OHM * tempMv / (VREF_MV - tempMv);
+  Sample s = readPin(PIN_TEMP);
+  rawTempMv = s.mv;
+  if (s.spread > NOISE_SPREAD_MV) return NAN;
+  if (s.mv < 50 || s.mv > ADC_MAX_MV) return NAN;  // สายขาด หรือ ช็อต
+  float r = NTC_SERIES_OHM * s.mv / (VREF_MV - s.mv);
   float invT = 1.0 / 298.15 + log(r / NTC_NOMINAL_OHM) / NTC_BETA;
-  return 1.0 / invT - 273.15;
+  float c = 1.0 / invT - 273.15;
+  if (c < -5 || c > 80) return NAN;
+  return c;
 }
 
-// ---------------- TDS ----------------
-float readTds(float tempC) {
-  tdsMv = readMilliVoltsMedian(PIN_TDS);
+float tdsFromMv(float mv, float tempC) {
   float t = isnan(tempC) ? 25.0 : tempC;
-  float v = (tdsMv / 1000.0) / (1.0 + 0.02 * (t - 25.0));  // ชดเชยอุณหภูมิ
+  float v = (mv / 1000.0) / (1.0 + 0.02 * (t - 25.0));  // ชดเชยอุณหภูมิ
   float tds = (133.42 * v * v * v - 255.86 * v * v + 857.39 * v) * 0.5 * tdsK;
   return tds < 0 ? 0 : tds;
 }
 
-// ---------------- pH ----------------
-float readPh() {
-  phMv = readMilliVoltsMedian(PIN_PH) * PH_DIVIDER;
-  if (PH_DIVIDER == 1.0 && phMv > 3100) {
-    Serial.println("คำเตือน: แรงดัน pH เกิน 3.1V! ปรับตัวปรับสีฟ้าบนบอร์ด pH ให้ต่ำลง");
-  }
+float readTds(float tempC) {
+  Sample s = readPin(PIN_TDS);
+  rawTdsMv = s.mv;
+  if (s.spread > NOISE_SPREAD_MV) return NAN;  // ไม่ได้ต่อโมดูล
+  if (s.mv < TDS_MIN_MV) return NAN;           // หัววัดไม่ได้อยู่ในน้ำ
+  return tdsFromMv(s.mv, tempC);
+}
+
+float phFromModuleMv(float moduleMv) {
   float slope = (7.0 - 4.0) / (phNeutralMv - phAcidMv);  // pH ต่อ mV
-  float ph = 7.0 + slope * (phMv - phNeutralMv);
-  return constrain(ph, 0.0, 14.0);
+  return constrain(7.0 + slope * (moduleMv - phNeutralMv), 0.0, 14.0);
 }
 
-bool phOk()  { return !isnan(phValue) && phValue >= PH_MIN_OK && phValue <= PH_MAX_OK; }
-bool tdsOk() { return !isnan(tdsPpm) && tdsPpm <= TDS_MAX_OK; }
-
-const char *tdsLevel(float tds) {
-  if (isnan(tds))   return "-";
-  if (tds < 300)    return "Excellent";
-  if (tds < 600)    return "Good";
-  if (tds < 900)    return "Fair";
-  if (tds < 1200)   return "Poor";
-  return "Bad";
+float readPh() {
+  Sample s = readPin(PIN_PH);
+  rawPhMv = s.mv * PH_DIVIDER;  // แรงดันจริงที่ขา Po
+  if (s.spread > NOISE_SPREAD_MV) return NAN;
+  if (s.mv < PH_MIN_MV || s.mv > ADC_MAX_MV) return NAN;
+  return phFromModuleMv(rawPhMv);
 }
 
-// ---------------- จอ LCD ----------------
+Values readAll() {
+  Values v;
+  v.temp = readTemperature();
+  v.tds = readTds(v.temp);
+  v.ph = readPh();
+  return v;
+}
+
+// วัดละเอียด: 8 รอบ เอาค่าเฉลี่ยเฉพาะรอบที่อ่านได้
+Values measureCareful() {
+  float sum[3] = {0, 0, 0};
+  int n[3] = {0, 0, 0};
+  for (int i = 0; i < 8; i++) {
+    Values v = readAll();
+    if (!isnan(v.ph))   { sum[0] += v.ph;   n[0]++; }
+    if (!isnan(v.tds))  { sum[1] += v.tds;  n[1]++; }
+    if (!isnan(v.temp)) { sum[2] += v.temp; n[2]++; }
+  }
+  Values r;
+  // ต้องอ่านได้อย่างน้อยครึ่งหนึ่ง ถึงจะนับว่าวัดได้
+  r.ph   = n[0] >= 4 ? sum[0] / n[0] : NAN;
+  r.tds  = n[1] >= 4 ? sum[1] / n[1] : NAN;
+  r.temp = n[2] >= 4 ? sum[2] / n[2] : NAN;
+  return r;
+}
+
+uint32_t nowEpoch() {
+  return timeSet ? (uint32_t)(millis() / 1000 + epochOffset) : 0;
+}
+
+// ================= จอ LCD =================
 void initLcd() {
   Wire.begin(PIN_SDA, PIN_SCL);
+  const uint8_t candidates[] = {0x27, 0x3F};
   uint8_t addr = 0;
-  const uint8_t candidates[] = {0x27, 0x3F};  // ที่อยู่ I2C ที่พบบ่อย
   for (uint8_t a : candidates) {
     Wire.beginTransmission(a);
     if (Wire.endTransmission() == 0) { addr = a; break; }
@@ -137,124 +190,154 @@ void initLcd() {
   lcd->backlight();
 }
 
-void lcdLine(int row, const String &text) {
+void lcdLine(int row, String s) {
   if (!lcd) return;
-  String s = text;
   while (s.length() < 20) s += ' ';
   lcd->setCursor(0, row);
   lcd->print(s.substring(0, 20));
 }
 
-String fmt(float v, int digits) { return isnan(v) ? String("--") : String(v, digits); }
+String fmt(float v, int digits) { return isnan(v) ? String("-") : String(v, digits); }
 
-void drawPage() {
-  switch (page) {
-    case 0:  // หน้าหลัก
-      lcdLine(0, "  WATER QUALITY");
-      lcdLine(1, "pH  : " + fmt(phValue, 2) + (phOk() ? "  OK" : "  !!"));
-      lcdLine(2, "TDS : " + fmt(tdsPpm, 0) + " ppm" + (tdsOk() ? " OK" : " !!"));
-      lcdLine(3, "Temp: " + fmt(temperatureC, 1) + " C");
-      break;
-    case 1:  // สรุปผล
-      lcdLine(0, "RESULT:");
-      lcdLine(1, (phOk() && tdsOk()) ? "  WATER IS GOOD" : "  CHECK WATER!");
-      lcdLine(2, String("pH ") + (phOk() ? "normal" : (phValue < PH_MIN_OK ? "acidic" : "alkaline")));
-      lcdLine(3, String("TDS ") + tdsLevel(tdsPpm));
-      break;
-    case 2:  // ข้อมูลระบบ
-      lcdLine(0, "WiFi: " + String(AP_SSID));
-      lcdLine(1, "Pass: " + String(AP_PASS));
-      lcdLine(2, "Web : " + WiFi.softAPIP().toString());
-      lcdLine(3, "mV T" + String((int)tempMv) + " D" + String((int)tdsMv) + " P" + String((int)phMv));
-      break;
+void showStatus(const String &s, unsigned long ms) {
+  statusLine = s;
+  statusUntil = millis() + ms;
+}
+
+void drawLcd() {
+  if (millis() < infoUntil) {
+    lcdLine(0, "WiFi: " + String(AP_SSID));
+    lcdLine(1, "Pass: " + String(AP_PASS));
+    lcdLine(2, "Web : " + WiFi.softAPIP().toString());
+    lcdLine(3, "Phones: " + String(WiFi.softAPgetStationNum()));
+    return;
+  }
+  lcdLine(0, "pH  : " + fmt(live.ph, 2));
+  lcdLine(1, "TDS : " + (isnan(live.tds) ? String("-") : fmt(live.tds, 0) + " ppm"));
+  lcdLine(2, "Temp: " + (isnan(live.temp) ? String("-") : fmt(live.temp, 1) + " C"));
+  if (millis() < statusUntil) {
+    lcdLine(3, statusLine);
+  } else if (WiFi.softAPgetStationNum() == 0) {
+    lcdLine(3, "WiFi: " + String(AP_SSID));
+  } else {
+    lcdLine(3, "Press GREEN to send");
   }
 }
 
-// ---------------- ปุ่ม ----------------
+// ================= ปุ่ม =================
+void sendMeasurement() {
+  lcdLine(3, "Measuring...");
+  Values v = measureCareful();
+  last.id++;
+  last.v = v;
+  last.epoch = nowEpoch();
+  Serial.printf("ส่งผล #%u: pH=%s TDS=%s T=%s\n", last.id,
+                fmt(v.ph, 2).c_str(), fmt(v.tds, 0).c_str(), fmt(v.temp, 1).c_str());
+  if (isnan(v.ph) && isnan(v.tds) && isnan(v.temp)) {
+    showStatus("No sensor reading!", 4000);
+  } else if (WiFi.softAPgetStationNum() == 0) {
+    showStatus("Saved #" + String(last.id) + " (no phone)", 4000);
+  } else {
+    showStatus("Sent #" + String(last.id) + " to web", 4000);
+  }
+  drawLcd();
+}
+
 void handleButton() {
   static bool lastState = HIGH;
-  static unsigned long lastChange = 0;
+  static unsigned long pressedAt = 0, lastChange = 0;
+  static bool longDone = false;
   bool state = digitalRead(PIN_BUTTON);
-  if (state != lastState && millis() - lastChange > 50) {
+  if (state != lastState && millis() - lastChange > 40) {
     lastChange = millis();
     lastState = state;
-    if (state == LOW) {  // กดลง
-      page = (page + 1) % PAGE_COUNT;
-      drawPage();
+    if (state == LOW) {          // กดลง
+      pressedAt = millis();
+      longDone = false;
+    } else if (!longDone) {      // ปล่อย (กดสั้น) -> วัดและส่ง
+      sendMeasurement();
     }
+  }
+  // กดค้าง 2 วินาที -> แสดงข้อมูล WiFi 6 วินาที
+  if (state == LOW && !longDone && millis() - pressedAt > 2000) {
+    longDone = true;
+    infoUntil = millis() + 6000;
+    drawLcd();
   }
 }
 
-// ---------------- หน้าเว็บ ----------------
-void handleJson() {
-  String j = "{";
-  j += "\"temperature\":" + (isnan(temperatureC) ? String("null") : String(temperatureC, 1)) + ",";
-  j += "\"tds\":" + (isnan(tdsPpm) ? String("null") : String(tdsPpm, 0)) + ",";
-  j += "\"ph\":" + (isnan(phValue) ? String("null") : String(phValue, 2)) + ",";
-  j += "\"ph_ok\":" + String(phOk() ? "true" : "false") + ",";
-  j += "\"tds_ok\":" + String(tdsOk() ? "true" : "false") + ",";
-  j += "\"tds_level\":\"" + String(tdsLevel(tdsPpm)) + "\"";
-  j += "}";
+// ================= Web API =================
+String jnum(float v, int digits) { return isnan(v) ? String("null") : String(v, digits); }
+
+String valuesJson(const Values &v) {
+  return "{\"ph\":" + jnum(v.ph, 2) + ",\"tds\":" + jnum(v.tds, 0) +
+         ",\"temp\":" + jnum(v.temp, 1) + "}";
+}
+
+void handleState() {
+  String j = "{\"boot\":" + String(bootId);
+  j += ",\"live\":" + valuesJson(live);
+  j += ",\"raw\":{\"ph_mv\":" + String(rawPhMv, 0) + ",\"tds_mv\":" + String(rawTdsMv, 0) +
+       ",\"temp_mv\":" + String(rawTempMv, 0) + "}";
+  if (last.id > 0) {
+    j += ",\"last\":{\"id\":" + String(last.id) + ",\"epoch\":" + String(last.epoch) +
+         ",\"values\":" + valuesJson(last.v) + "}";
+  } else {
+    j += ",\"last\":null";
+  }
+  j += ",\"time_set\":" + String(timeSet ? "true" : "false") + "}";
+  server.sendHeader("Cache-Control", "no-store");
   server.send(200, "application/json", j);
 }
 
-const char INDEX_HTML[] PROGMEM = R"HTML(<!doctype html>
-<html lang="th"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>เครื่องวัดคุณภาพน้ำ</title>
-<style>
-body{font-family:sans-serif;margin:0;padding:16px;background:#eef6fb;color:#123}
-h1{font-size:22px;margin:0 0 12px}
-.card{background:#fff;border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:0 1px 4px #0002}
-.v{font-size:40px;font-weight:bold}.u{font-size:16px;color:#567}
-.ok{color:#1a8a3a}.bad{color:#c62828}
-#sum{font-size:20px;font-weight:bold;text-align:center}
-</style></head><body>
-<h1>💧 เครื่องวัดคุณภาพน้ำ</h1>
-<div class="card" id="sum">กำลังโหลด...</div>
-<div class="card">pH<div><span class="v" id="ph">--</span></div><div id="phs"></div></div>
-<div class="card">TDS<div><span class="v" id="tds">--</span> <span class="u">ppm</span></div><div id="tdss"></div></div>
-<div class="card">อุณหภูมิ<div><span class="v" id="t">--</span> <span class="u">°C</span></div></div>
-<script>
-const lv={Excellent:"ดีมาก",Good:"ดี",Fair:"พอใช้",Poor:"ไม่ดี",Bad:"แย่","-":"-"};
-async function load(){try{
- const d=await (await fetch('/data')).json();
- ph.textContent=d.ph??'--'; tds.textContent=d.tds??'--'; t.textContent=d.temperature??'--';
- phs.innerHTML=d.ph_ok?'<span class=ok>ปกติ (6.5–8.5)</span>':'<span class=bad>ผิดปกติ</span>';
- tdss.innerHTML='<span class='+(d.tds_ok?'ok':'bad')+'>'+lv[d.tds_level]+'</span>';
- const g=d.ph_ok&&d.tds_ok; sum.className='card '+(g?'ok':'bad');
- sum.textContent=g?'✅ น้ำมีคุณภาพดี':'⚠️ ควรตรวจสอบน้ำ';
-}catch(e){sum.textContent='เชื่อมต่อไม่ได้';}}
-load(); setInterval(load,2000);
-</script></body></html>)HTML";
+void handleSetTime() {
+  if (server.hasArg("epoch")) {
+    uint32_t e = strtoul(server.arg("epoch").c_str(), nullptr, 10);
+    if (e > 1600000000UL) {
+      epochOffset = (int64_t)e - (int64_t)(millis() / 1000);
+      timeSet = true;
+    }
+  }
+  server.send(200, "application/json", "{\"ok\":true}");
+}
 
-void handleRoot() { server.send_P(200, "text/html; charset=utf-8", INDEX_HTML); }
+void handleMeasure() {
+  sendMeasurement();
+  server.send(200, "application/json", "{\"ok\":true,\"id\":" + String(last.id) + "}");
+}
 
-// ---------------- คาลิเบรตผ่าน Serial Monitor ----------------
+void handleRoot() {
+  server.send_P(200, "text/html; charset=utf-8", INDEX_HTML);
+}
+
+// ================= คาลิเบรตผ่าน Serial Monitor =================
 void printHelp() {
-  Serial.println(F("คำสั่ง: cal7 | cal4 | tds <ค่าppmจริง> | show | reset"));
+  Serial.println(F("คำสั่ง: cal7 | cal4 | tds <ppmจริง> | show | reset"));
 }
 
 void handleSerial() {
   if (!Serial.available()) return;
   String cmd = Serial.readStringUntil('\n');
   cmd.trim();
-  if (cmd == "cal7") {
-    phNeutralMv = readMilliVoltsMedian(PIN_PH) * PH_DIVIDER;
-    prefs.putFloat("ph7", phNeutralMv);
-    Serial.printf("บันทึก pH7 = %.0f mV\n", phNeutralMv);
-  } else if (cmd == "cal4") {
-    phAcidMv = readMilliVoltsMedian(PIN_PH) * PH_DIVIDER;
-    prefs.putFloat("ph4", phAcidMv);
-    Serial.printf("บันทึก pH4 = %.0f mV\n", phAcidMv);
+  if (cmd == "cal7" || cmd == "cal4") {
+    Sample s = readPin(PIN_PH);
+    float mv = s.mv * PH_DIVIDER;
+    if (s.mv < PH_MIN_MV) { Serial.println("อ่านค่า pH ไม่ได้ ตรวจสายก่อน"); return; }
+    if (cmd == "cal7") { phNeutralMv = mv; prefs.putFloat("ph7", mv); }
+    else               { phAcidMv = mv;    prefs.putFloat("ph4", mv); }
+    Serial.printf("บันทึก %s = %.0f mV\n", cmd.c_str(), mv);
   } else if (cmd.startsWith("tds ")) {
     float real = cmd.substring(4).toFloat();
-    float measured = readTds(temperatureC) / tdsK;  // ค่าก่อนคูณ K
-    if (real > 0 && measured > 0) {
+    Sample s = readPin(PIN_TDS);
+    float oldK = tdsK;
+    tdsK = 1.0;
+    float measured = tdsFromMv(s.mv, readTemperature());
+    if (real > 0 && measured > 1) {
       tdsK = real / measured;
       prefs.putFloat("tdsK", tdsK);
       Serial.printf("บันทึก TDS K = %.3f\n", tdsK);
     } else {
+      tdsK = oldK;
       Serial.println("ค่าไม่ถูกต้อง (จุ่มหัววัดในน้ำยามาตรฐานก่อน)");
     }
   } else if (cmd == "reset") {
@@ -268,16 +351,13 @@ void handleSerial() {
   }
 }
 
-// ---------------- setup / loop ----------------
+// ================= setup / loop =================
 void setup() {
   Serial.begin(115200);
   delay(200);
   Serial.println("\n=== เครื่องวัดคุณภาพน้ำ ===");
 
-  analogReadResolution(12);
-  analogSetPinAttenuation(PIN_TDS, ADC_11db);
-  analogSetPinAttenuation(PIN_PH, ADC_11db);
-  analogSetPinAttenuation(PIN_TEMP, ADC_11db);
+  analogReadResolution(12);  // ค่าเริ่มต้นของ ESP32 อ่านได้ 0-3.1V อยู่แล้ว
   pinMode(PIN_BUTTON, INPUT_PULLUP);
 
   prefs.begin("wqm", false);
@@ -287,13 +367,18 @@ void setup() {
 
   initLcd();
   lcdLine(0, "Water Quality Meter");
-  lcdLine(1, "Starting...");
+  lcdLine(1, "Starting WiFi...");
 
   WiFi.mode(WIFI_AP);
   WiFi.softAP(AP_SSID, AP_PASS);
-  server.on("/", handleRoot);
-  server.on("/data", handleJson);
+  bootId = esp_random() % 1000000;
+
+  server.on("/", HTTP_GET, handleRoot);
+  server.on("/api/state", HTTP_GET, handleState);
+  server.on("/api/time", HTTP_POST, handleSetTime);
+  server.on("/api/measure", HTTP_POST, handleMeasure);
   server.begin();
+
   Serial.printf("WiFi: %s  รหัส: %s  เปิดเว็บ: http://%s\n",
                 AP_SSID, AP_PASS, WiFi.softAPIP().toString().c_str());
   printHelp();
@@ -308,12 +393,10 @@ void loop() {
 
   if (millis() - lastRead >= 1000) {
     lastRead = millis();
-    temperatureC = readTemperature();
-    tdsPpm  = readTds(temperatureC);
-    phValue = readPh();
-    drawPage();
-    Serial.printf("T=%s C  TDS=%s ppm  pH=%s  | mV T=%.0f D=%.0f P=%.0f\n",
-                  fmt(temperatureC, 1).c_str(), fmt(tdsPpm, 0).c_str(),
-                  fmt(phValue, 2).c_str(), tempMv, tdsMv, phMv);
+    live = readAll();
+    drawLcd();
+    Serial.printf("pH=%s TDS=%s T=%s | mV pH=%.0f TDS=%.0f T=%.0f\n",
+                  fmt(live.ph, 2).c_str(), fmt(live.tds, 0).c_str(), fmt(live.temp, 1).c_str(),
+                  rawPhMv, rawTdsMv, rawTempMv);
   }
 }
