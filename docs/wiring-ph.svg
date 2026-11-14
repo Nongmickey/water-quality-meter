@@ -1,0 +1,126 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 930" width="920" height="930" font-family="Tahoma, 'Noto Sans Thai', sans-serif">
+<rect width="920" height="930" fill="#ffffff"/>
+<text x="30" y="40" font-size="22" fill="#102a32" text-anchor="start" font-weight="bold">การต่อเซนเซอร์ pH กับ ESP32 (โค้ด ph_test)</text>
+<text x="30" y="64" font-size="13.5" fill="#587480" text-anchor="start">โมดูล pH ใช้ไฟ 5V · ขา Po ออกได้ถึง 5V จึงต้องผ่านตัวแบ่งแรงดัน 4.7k + 4.7k ให้เหลือครึ่งหนึ่งก่อนเข้า ESP32</text>
+<rect x="680" y="92" width="210" height="660" rx="12" fill="#1d2f3a"/>
+<text x="785" y="124" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">บอร์ดขยาย ESP32</text>
+<text x="785" y="150" font-size="12" fill="#f0b4ac" text-anchor="middle" font-weight="bold">ใช้ช่อง S เท่านั้น ห้ามใช้ช่อง V</text>
+<rect x="673" y="203" width="14" height="14" fill="#d9c27a" stroke="#8a7330"/>
+<text x="698" y="215" font-size="14" fill="#ffffff" text-anchor="start">S ของ D35</text>
+<rect x="673" y="423" width="14" height="14" fill="#d9c27a" stroke="#8a7330"/>
+<text x="698" y="435" font-size="14" fill="#ffffff" text-anchor="start">G</text>
+<rect x="673" y="493" width="14" height="14" fill="#d9c27a" stroke="#8a7330"/>
+<text x="698" y="505" font-size="14" fill="#ffffff" text-anchor="start">VIN (5V)</text>
+<rect x="673" y="553" width="14" height="14" fill="#d9c27a" stroke="#8a7330"/>
+<text x="698" y="565" font-size="14" fill="#ffffff" text-anchor="start">S ของ D15</text>
+<rect x="673" y="583" width="14" height="14" fill="#d9c27a" stroke="#8a7330"/>
+<text x="698" y="595" font-size="14" fill="#ffffff" text-anchor="start">G</text>
+<rect x="673" y="623" width="14" height="14" fill="#d9c27a" stroke="#8a7330"/>
+<text x="698" y="635" font-size="14" fill="#ffffff" text-anchor="start">S ของ D21</text>
+<rect x="673" y="653" width="14" height="14" fill="#d9c27a" stroke="#8a7330"/>
+<text x="698" y="665" font-size="14" fill="#ffffff" text-anchor="start">S ของ D22</text>
+<rect x="673" y="683" width="14" height="14" fill="#d9c27a" stroke="#8a7330"/>
+<text x="698" y="695" font-size="14" fill="#ffffff" text-anchor="start">VIN (5V)</text>
+<rect x="673" y="713" width="14" height="14" fill="#d9c27a" stroke="#8a7330"/>
+<text x="698" y="725" font-size="14" fill="#ffffff" text-anchor="start">G</text>
+<text x="785" y="290" font-size="12" fill="#9fc3cc" text-anchor="middle">ช่อง D25 D26 D33 (TDS)</text>
+<text x="785" y="308" font-size="12" fill="#9fc3cc" text-anchor="middle">และ D32 (NTC) ต่อค้างไว้ได้</text>
+<rect x="50" y="110" width="240" height="220" rx="8" fill="#1f4f8f" stroke="#123461" stroke-width="2.5"/>
+<text x="170.0" y="102" font-size="14" fill="#102a32" text-anchor="middle" font-weight="bold">โมดูล pH (บอร์ดสีน้ำเงิน)</text>
+<circle cx="100" cy="165" r="27" fill="#c9cfd2" stroke="#7d878b" stroke-width="3"/>
+<circle cx="100" cy="165" r="10" fill="#7d878b"/>
+<text x="100" y="212" font-size="12.5" fill="#ffffff" text-anchor="middle" font-weight="bold">ช่อง BNC</text>
+<rect x="150" y="250" width="30" height="30" rx="3" fill="#2d6fd0" stroke="#d9e3f2" stroke-width="2"/>
+<circle cx="165" cy="265" r="8" fill="#e8c766" stroke="#8a7330"/>
+<text x="165" y="300" font-size="11.5" fill="#ffffff" text-anchor="middle" font-weight="bold">ปรับ 1</text>
+<rect x="200" y="250" width="30" height="30" rx="3" fill="#2d6fd0" stroke="#d9e3f2" stroke-width="2"/>
+<circle cx="215" cy="265" r="8" fill="#e8c766" stroke="#8a7330"/>
+<text x="215" y="300" font-size="11.5" fill="#ffffff" text-anchor="middle" font-weight="bold">ปรับ 2</text>
+<rect x="283" y="133" width="14" height="14" fill="#d9c27a" stroke="#8a7330"/>
+<text x="276" y="145" font-size="13" fill="#ffffff" text-anchor="end" font-weight="bold">To</text>
+<rect x="283" y="163" width="14" height="14" fill="#d9c27a" stroke="#8a7330"/>
+<text x="276" y="175" font-size="13" fill="#ffffff" text-anchor="end" font-weight="bold">Do</text>
+<rect x="283" y="193" width="14" height="14" fill="#d9c27a" stroke="#8a7330"/>
+<text x="276" y="205" font-size="13" fill="#ffffff" text-anchor="end" font-weight="bold">Po</text>
+<rect x="283" y="223" width="14" height="14" fill="#d9c27a" stroke="#8a7330"/>
+<text x="276" y="235" font-size="13" fill="#ffffff" text-anchor="end" font-weight="bold">G</text>
+<rect x="283" y="253" width="14" height="14" fill="#d9c27a" stroke="#8a7330"/>
+<text x="276" y="265" font-size="13" fill="#ffffff" text-anchor="end" font-weight="bold">G</text>
+<rect x="283" y="283" width="14" height="14" fill="#d9c27a" stroke="#8a7330"/>
+<text x="276" y="295" font-size="13" fill="#ffffff" text-anchor="end" font-weight="bold">V+</text>
+<polyline points="73,165 58,165 40,190 40,360 95,380" fill="none" stroke="#3a3a3a" stroke-width="6" stroke-linejoin="round"/>
+<rect x="80" y="380" width="30" height="170" rx="8" fill="#e6eef0" stroke="#7f9196" stroke-width="2"/>
+<ellipse cx="95" cy="565" rx="18" ry="20" fill="#d4ecf2" stroke="#7f9196" stroke-width="2"/>
+<text x="125" y="440" font-size="14" fill="#102a32" text-anchor="start" font-weight="bold">หัววัด pH</text>
+<text x="125" y="460" font-size="12.5" fill="#587480" text-anchor="start">ถอดฝาครอบ</text>
+<text x="125" y="478" font-size="12.5" fill="#587480" text-anchor="start">แล้วจุ่มน้ำ</text>
+<polyline points="297,140 330,140" fill="none" stroke="#b9c3c6" stroke-width="2.5" stroke-linejoin="round" stroke-dasharray="5 4"/>
+<polyline points="297,170 330,170" fill="none" stroke="#b9c3c6" stroke-width="2.5" stroke-linejoin="round" stroke-dasharray="5 4"/>
+<text x="336" y="160" font-size="12" fill="#587480" text-anchor="start">To, Do ไม่ใช้</text>
+<polyline points="297,200 470,200" fill="none" stroke="#e08a1e" stroke-width="3.5" stroke-linejoin="round"/>
+<rect x="351.0" y="189" width="68" height="22" rx="5" fill="#f3e3c3" stroke="#6b4f1d" stroke-width="2"/>
+<rect x="361.0" y="189" width="6" height="22" fill="#e0b400"/>
+<rect x="374.0" y="189" width="6" height="22" fill="#7b3fa0"/>
+<rect x="387.0" y="189" width="6" height="22" fill="#c62828"/>
+<rect x="400.0" y="189" width="6" height="22" fill="#c9a227"/>
+<text x="385.0" y="180" font-size="15" fill="#6b4f1d" text-anchor="middle" font-weight="bold">R1 4.7kΩ</text>
+<polyline points="470,200 673,200" fill="none" stroke="#1d8a4a" stroke-width="3.5" stroke-linejoin="round"/>
+<text x="580" y="192" font-size="12" fill="#1d8a4a" text-anchor="middle">สายเขียว → D35</text>
+<polyline points="470,200 470,430" fill="none" stroke="#102a32" stroke-width="3" stroke-linejoin="round"/>
+<polyline points="470,255 600,255" fill="none" stroke="#102a32" stroke-width="3" stroke-linejoin="round"/>
+<polyline points="540,255 540,430" fill="none" stroke="#102a32" stroke-width="3" stroke-linejoin="round"/>
+<polyline points="600,255 600,430" fill="none" stroke="#102a32" stroke-width="3" stroke-linejoin="round"/>
+<rect x="459" y="311.0" width="22" height="68" rx="5" fill="#f3e3c3" stroke="#6b4f1d" stroke-width="2"/>
+<rect x="459" y="321.0" width="22" height="6" fill="#e0b400"/>
+<rect x="459" y="334.0" width="22" height="6" fill="#7b3fa0"/>
+<rect x="459" y="347.0" width="22" height="6" fill="#c62828"/>
+<rect x="459" y="360.0" width="22" height="6" fill="#c9a227"/>
+<text x="452" y="350.0" font-size="14" fill="#6b4f1d" text-anchor="end" font-weight="bold">R2 4.7kΩ</text>
+<rect x="525" y="310.0" width="30" height="60" rx="6" fill="#2f5fb3" stroke="#1d3d75" stroke-width="2"/>
+<rect x="545" y="310.0" width="10" height="60" fill="#cfd8e8"/>
+<text x="518" y="326.0" font-size="18" fill="#d64545" text-anchor="end" font-weight="bold">+</text>
+<text x="518" y="366.0" font-size="18" fill="#102a32" text-anchor="end" font-weight="bold">−</text>
+<text x="540" y="388.0" font-size="13.5" fill="#102a32" text-anchor="middle" font-weight="bold" stroke="#ffffff" stroke-width="5" paint-order="stroke">10µF</text>
+<ellipse cx="600" cy="340.0" rx="17" ry="14" fill="#e3a33a" stroke="#9a6a17" stroke-width="2"/>
+<text x="600" y="345.0" font-size="11" fill="#102a32" text-anchor="middle" font-weight="bold">104</text>
+<text x="600" y="374.0" font-size="12.5" fill="#102a32" text-anchor="middle" font-weight="bold" stroke="#ffffff" stroke-width="5" paint-order="stroke">0.1µF</text>
+<circle cx="470" cy="200" r="7" fill="#102a32"/>
+<circle cx="470" cy="255" r="5" fill="#102a32"/>
+<circle cx="540" cy="255" r="5" fill="#102a32"/>
+<rect x="432" y="150" width="76" height="26" rx="13" fill="#fff4cc" stroke="#d4a017"/>
+<text x="470" y="168" font-size="14" fill="#102a32" text-anchor="middle" font-weight="bold">จุด P</text>
+<polyline points="345,430 673,430" fill="none" stroke="#2b2b2b" stroke-width="4" stroke-linejoin="round"/>
+<polyline points="297,230 345,230 345,430" fill="none" stroke="#2b2b2b" stroke-width="3.5" stroke-linejoin="round"/>
+<circle cx="470" cy="430" r="5" fill="#102a32"/>
+<circle cx="540" cy="430" r="5" fill="#102a32"/>
+<circle cx="600" cy="430" r="5" fill="#102a32"/>
+<text x="560" y="452" font-size="12" fill="#2b2b2b" text-anchor="middle">รางกราวด์ → G</text>
+<polyline points="297,290 320,290 320,500 673,500" fill="none" stroke="#d64545" stroke-width="3.5" stroke-linejoin="round"/>
+<text x="560" y="492" font-size="12" fill="#d64545" text-anchor="middle">สายแดง → VIN (5V)</text>
+<circle cx="330" cy="575" r="26" fill="#2e9e5b" stroke="#1d6b3c" stroke-width="3"/>
+<text x="290" y="580" font-size="13" fill="#102a32" text-anchor="end" font-weight="bold">ปุ่มเขียว</text>
+<text x="370" y="552" font-size="12" fill="#587480" text-anchor="start">ขั้ว 23</text>
+<text x="370" y="610" font-size="12" fill="#587480" text-anchor="start">ขั้ว 24</text>
+<polyline points="356,567 360,567 360,560 673,560" fill="none" stroke="#1d8a4a" stroke-width="3" stroke-linejoin="round"/>
+<polyline points="356,583 360,583 360,590 673,590" fill="none" stroke="#2b2b2b" stroke-width="3" stroke-linejoin="round"/>
+<rect x="220" y="620" width="250" height="120" rx="8" fill="#eef4f5" stroke="#0b7480" stroke-width="2"/>
+<text x="345" y="685" font-size="15" fill="#102a32" text-anchor="middle" font-weight="bold">จอ LCD 20×4 (I2C)</text>
+<rect x="463" y="623" width="14" height="14" fill="#d9c27a" stroke="#8a7330"/>
+<text x="456" y="635" font-size="13" fill="#102a32" text-anchor="end" font-weight="bold">SDA</text>
+<polyline points="477,630 673,630" fill="none" stroke="#2b6fd6" stroke-width="3" stroke-linejoin="round"/>
+<rect x="463" y="653" width="14" height="14" fill="#d9c27a" stroke="#8a7330"/>
+<text x="456" y="665" font-size="13" fill="#102a32" text-anchor="end" font-weight="bold">SCL</text>
+<polyline points="477,660 673,660" fill="none" stroke="#8e44ad" stroke-width="3" stroke-linejoin="round"/>
+<rect x="463" y="683" width="14" height="14" fill="#d9c27a" stroke="#8a7330"/>
+<text x="456" y="695" font-size="13" fill="#102a32" text-anchor="end" font-weight="bold">VCC</text>
+<polyline points="477,690 673,690" fill="none" stroke="#d64545" stroke-width="3" stroke-linejoin="round"/>
+<rect x="463" y="713" width="14" height="14" fill="#d9c27a" stroke="#8a7330"/>
+<text x="456" y="725" font-size="13" fill="#102a32" text-anchor="end" font-weight="bold">GND</text>
+<polyline points="477,720 673,720" fill="none" stroke="#2b2b2b" stroke-width="3" stroke-linejoin="round"/>
+<text x="30" y="785" font-size="13.5" fill="#102a32" text-anchor="start" font-weight="bold">1) Po → R1 4.7kΩ → จุด P · จุด P → สายไป S ของ D35 · จุด P → R2 4.7kΩ → G   (แรงดันเหลือครึ่งหนึ่ง)</text>
+<text x="30" y="808" font-size="13.5" fill="#102a32" text-anchor="start" font-weight="bold">2) 10µF: ขายาว (+) ต่อจุด P, ขาข้างแถบขาว (−) ต่อ G · 104: ไม่มีขั้ว ต่อจุด P กับ G</text>
+<text x="30" y="831" font-size="13.5" fill="#102a32" text-anchor="start" font-weight="bold">3) V+ → VIN (5V) · G → G · ขา To, Do ไม่ต่อ · ตัวต้านทานเหลือง-ม่วง-แดง-ทอง = 4.7kΩ</text>
+<text x="30" y="854" font-size="13.5" fill="#102a32" text-anchor="start" font-weight="bold">4) ตั้งศูนย์ก่อนใช้: ถอดหัววัด ช็อตรูกลางของ BNC กับขอบนอก แล้วหมุน "ปรับ 1" (ใกล้ BNC) จน Po ≈ 2.50 V</text>
+<text x="30" y="877" font-size="13.5" fill="#587480" text-anchor="start">   (วัดด้วยมิเตอร์ที่ขา Po กับ G · ที่ D35 จะเห็นครึ่งหนึ่ง ≈ 1.25 V) · "ปรับ 2" ไม่ต้องหมุน</text>
+<text x="30" y="900" font-size="13.5" fill="#587480" text-anchor="start">อัปโหลดโค้ด ph_test · กดสั้น = วัด · กดค้าง 3 วิ แล้วปล่อย = คาลิเบรต 6.86 · กดค้าง 6 วิ แล้วปล่อย = คาลิเบรต 4.00</text>
+</svg>
