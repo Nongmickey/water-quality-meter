@@ -154,9 +154,18 @@ code{font-size:13px}
 </div>
 <div class="card">
   <b>คาลิเบรต</b> <span class="muted">ค่าตัวคูณ K ตอนนี้ = <b id="k">1.000</b></span>
-  <p class="muted" style="margin:6px 0">จุ่มหัววัดในน้ำที่รู้ค่า TDS (เช่น วัดด้วยปากกา TDS) ใส่ค่าแล้วกดคาลิเบรต</p>
-  <div class="row"><input id="ref" type="number" placeholder="ค่าจริง ppm"> <button id="cal">คาลิเบรต</button> <button class="ghost" id="reset">ล้างค่า</button></div>
+  <p class="muted" style="margin:6px 0">ตามไลบรารี GravityTDS ของ DFRobot: จุ่มหัววัดในน้ำยามาตรฐาน <b>1413 µS/cm (= 707 ppm)</b> ที่ 25 °C แล้วกดปุ่มด้านล่าง</p>
+  <div class="row"><button id="cal707">คาลิเบรตด้วยน้ำยามาตรฐาน 707 ppm</button></div>
+  <p class="muted" style="margin:10px 0 0">หรือใช้น้ำที่รู้ค่าอื่น (เช่น วัดด้วยปากกา TDS) ใส่ค่าแล้วกดคาลิเบรต</p>
+  <div class="row"><input id="ref" type="number" placeholder="ค่าจริง ppm"> <button id="cal">คาลิเบรต</button> <button class="ghost" id="reset">ใช้ค่ามาตรฐาน K = 1</button></div>
   <div class="muted" id="calMsg"></div>
+  <table class="muted" style="margin-top:10px;border-collapse:collapse;font-size:13px">
+    <tr><td style="padding:2px 8px 2px 0">ค่า K เริ่มต้น (ยังไม่คาลิเบรต)</td><td><b>1.0</b></td></tr>
+    <tr><td style="padding:2px 8px 2px 0">น้ำยามาตรฐานที่แนะนำ</td><td><b>707 ppm (1413 µS/cm) @ 25 °C</b></td></tr>
+    <tr><td style="padding:2px 8px 2px 0">ตัวคูณ TDS (TdsFactor)</td><td><b>0.5</b> (TDS = EC ÷ 2)</td></tr>
+    <tr><td style="padding:2px 8px 2px 0">ชดเชยอุณหภูมิ</td><td><b>2% ต่อ °C</b> เทียบที่ 25 °C</td></tr>
+    <tr><td style="padding:2px 8px 2px 0">ค่า K ที่ยอมรับได้</td><td><b>0.25 – 4.0</b></td></tr>
+  </table>
 </div>
 <div class="card muted">
   <b style="color:#102a32">สูตรที่ใช้คำนวณ</b><br>
@@ -204,16 +213,17 @@ async function tick() {
 }
 
 $('saveTemp').onclick = () => { const v = parseFloat($('temp').value); if (v > 0 && v < 60) { T = v; put('waterTemp', v); } };
-$('cal').onclick = () => {
-  const ref = parseFloat($('ref').value);
+function calibrate(ref) {
   if (!last) { $('calMsg').textContent = 'จุ่มหัววัดลงน้ำก่อน'; return; }
   if (!(ref > 0)) { $('calMsg').textContent = 'ใส่ค่า TDS จริงก่อน'; return; }
   const k = ref / calc(last.mv, 1).tds;
   if (k < 0.25 || k > 4) { $('calMsg').textContent = 'ค่า K = ' + k.toFixed(2) + ' ผิดปกติ (ต้องอยู่ระหว่าง 0.25-4) ตรวจหัววัดหรือค่าที่ใส่'; return; }
   K = k; put('tdsK', k); $('k').textContent = k.toFixed(3);
-  $('calMsg').textContent = 'คาลิเบรตแล้ว ค่า K ถูกเก็บในมือถือเครื่องนี้';
-};
-$('reset').onclick = () => { K = 1; put('tdsK', 1); $('k').textContent = '1.000'; $('calMsg').textContent = 'ล้างค่าคาลิเบรตแล้ว'; };
+  $('calMsg').textContent = 'คาลิเบรตด้วย ' + ref + ' ppm แล้ว ค่า K ถูกเก็บในมือถือเครื่องนี้';
+}
+$('cal').onclick = () => calibrate(parseFloat($('ref').value));
+$('cal707').onclick = () => calibrate(707);
+$('reset').onclick = () => { K = 1; put('tdsK', 1); $('k').textContent = '1.000'; $('calMsg').textContent = 'กลับไปใช้ค่ามาตรฐานของไลบรารี K = 1.0'; };
 tick();
 </script></body></html>)PAGE";
 
