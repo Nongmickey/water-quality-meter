@@ -2,7 +2,6 @@
 #include <LiquidCrystal_I2C.h>
 
 #define TdsSensorPin 34 // ESP32: GPIO34 = S of D34 on the expansion board
-#define VREF 3.3 // ESP32: analog reference voltage(Volt) of the ADC
 #define SCOUNT 30 // sum of sample point
 int analogBuffer[SCOUNT]; // store the analog value in the array, read from ADC
 int analogBufferTemp[SCOUNT];
@@ -38,7 +37,7 @@ void loop()
   if (millis() - analogSampleTimepoint > 40U) //every 40 milliseconds,read the analog value from the ADC
   {
     analogSampleTimepoint = millis();
-    analogBuffer[analogBufferIndex] = analogRead(TdsSensorPin); //read the analog value and store into the buffer
+    analogBuffer[analogBufferIndex] = analogReadMilliVolts(TdsSensorPin); // ESP32: read millivolts (calibrated) instead of raw ADC
     analogBufferIndex++;
     if (analogBufferIndex == SCOUNT)
       analogBufferIndex = 0;
@@ -49,7 +48,7 @@ void loop()
     printTimepoint = millis();
     for (copyIndex = 0; copyIndex < SCOUNT; copyIndex++)
       analogBufferTemp[copyIndex] = analogBuffer[copyIndex];
-    averageVoltage = getMedianNum(analogBufferTemp, SCOUNT) * (float)VREF / 4096.0; // ESP32: 12-bit ADC (0-4095)
+    averageVoltage = getMedianNum(analogBufferTemp, SCOUNT) / 1000.0; // ESP32: millivolts -> volts
     float compensationCoefficient = 1.0 + 0.02 * (temperature - 25.0); //temperature compensation formula: fFinalResult(25^C) = fFinalResult(current)/(1.0+0.02*(fTP-25.0));
     float compensationVolatge = averageVoltage / compensationCoefficient; //temperature compensation
     tdsValue = (133.42 * compensationVolatge * compensationVolatge * compensationVolatge - 255.86 * compensationVolatge * compensationVolatge + 857.39 * compensationVolatge) * 0.5; //convert voltage value to tds value
