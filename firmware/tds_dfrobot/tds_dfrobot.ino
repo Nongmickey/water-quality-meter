@@ -1,3 +1,6 @@
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+
 #define TdsSensorPin 34 // ESP32: GPIO34 = S of D34 on the expansion board
 #define VREF 3.3 // ESP32: analog reference voltage(Volt) of the ADC
 #define SCOUNT 30 // sum of sample point
@@ -5,11 +8,28 @@ int analogBuffer[SCOUNT]; // store the analog value in the array, read from ADC
 int analogBufferTemp[SCOUNT];
 int analogBufferIndex = 0, copyIndex = 0;
 float averageVoltage = 0, tdsValue = 0, temperature = 25;
+LiquidCrystal_I2C *lcd = nullptr; // LCD 20x4 (I2C): SDA = D21, SCL = D22
 
 void setup()
 {
   Serial.begin(115200);
   pinMode(TdsSensorPin, INPUT);
+
+  // LCD: find the I2C address (0x27, 0x3F, ...) and start the screen
+  Wire.begin(21, 22);
+  const uint8_t addrs[] = {0x27, 0x3F, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26,
+                           0x38, 0x39, 0x3A, 0x3B, 0x3C, 0x3D, 0x3E};
+  for (uint8_t a : addrs) {
+    Wire.beginTransmission(a);
+    if (Wire.endTransmission() == 0) {
+      lcd = new LiquidCrystal_I2C(a, 20, 4);
+      lcd->init();
+      lcd->backlight();
+      lcd->setCursor(0, 0);
+      lcd->print("TDS Meter");
+      break;
+    }
+  }
 }
 
 void loop()
@@ -37,6 +57,11 @@ void loop()
     Serial.print("TDS Value:");
     Serial.print(tdsValue, 0);
     Serial.println("ppm");
+
+    if (lcd) {
+      lcd->setCursor(0, 2);
+      lcd->print("TDS : " + String(tdsValue, 0) + " ppm      ");
+    }
   }
 }
 int getMedianNum(int bArray[], int iFilterLen)
