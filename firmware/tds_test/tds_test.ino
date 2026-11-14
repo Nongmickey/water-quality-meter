@@ -59,7 +59,8 @@ void lcdLine(int row, String s) {
   lcd->print(s.substring(0, 20));
 }
 
-String ppm(float v) { return isnan(v) ? String("-") : String(v, 0) + " ppm"; }
+// ยังไม่ได้จุ่มหัววัดลงน้ำ = แสดง 0 ppm (ไม่นำไปคิดค่าเฉลี่ย)
+String ppm(float v) { return (isnan(v) ? String("0") : String(v, 0)) + " ppm"; }
 
 void initLcd() {
   Wire.begin(PIN_SDA, PIN_SCL);
@@ -107,7 +108,7 @@ void runTest() {
       sum += t; n++;
       mn = min(mn, t); mx = max(mx, t);
     }
-    Serial.printf("%d,%s,%.0f\n", i, isnan(t) ? "-" : String(t, 0).c_str(), mv);
+    Serial.printf("%d,%.0f,%.0f\n", i, isnan(t) ? 0.0f : t, mv);
 
     String bar = "";
     for (int k = 0; k < 20; k++) bar += (k < i * 20 / SECONDS) ? '#' : '.';

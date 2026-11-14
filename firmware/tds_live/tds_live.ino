@@ -2,6 +2,7 @@
  * ดูค่า TDS แบบสด: วัดทุก 1 วินาทีไปเรื่อยๆ ไม่จับเวลา
  *
  * จอ LCD แสดง: ค่าตอนนี้ แรงดัน (mV) ค่าต่ำสุด/สูงสุด และวินาทีที่ผ่านไป
+ * ยังไม่ได้จุ่มหัววัดลงน้ำ = แสดง 0 ppm (ไม่นำไปคิดค่าต่ำสุด/สูงสุด)
  * กดปุ่มสีเขียว = ล้างค่าต่ำสุด/สูงสุด แล้วเริ่มนับใหม่
  * Serial Monitor (115200) พิมพ์ทุกวินาที: วินาที,TDS(ppm),แรงดัน(mV)
  *
@@ -122,11 +123,11 @@ void loop() {
     unsigned long sec = (millis() - startMs) / 1000;
 
     lcdLine(0, "TDS LIVE     " + String(sec) + " s");
-    lcdLine(1, "Now : " + (isnan(t) ? String("-") : String(t, 0) + " ppm"));
+    lcdLine(1, "Now : " + (isnan(t) ? String("0") : String(t, 0)) + " ppm");
     lcdLine(2, "mV  : " + String(mv, 0));
-    lcdLine(3, isnan(mn) ? String("Min -  Max -")
+    lcdLine(3, isnan(mn) ? String("Min 0  Max 0")
                          : "Min " + String(mn, 0) + "  Max " + String(mx, 0));
 
-    Serial.printf("%lu,%s,%.0f\n", sec, isnan(t) ? "-" : String(t, 0).c_str(), mv);
+    Serial.printf("%lu,%.0f,%.0f\n", sec, isnan(t) ? 0.0f : t, mv);
   }
 }
