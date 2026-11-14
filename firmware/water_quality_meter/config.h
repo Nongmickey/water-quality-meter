@@ -5,18 +5,18 @@
 // ================= ขาที่ใช้ =================
 // ขาอนาล็อกต้องอยู่กลุ่ม ADC1 (32-39) เพราะ ADC2 ใช้ไม่ได้ตอนเปิด WiFi
 const int PIN_TDS    = 34;  // TDS: ขา A
-const int PIN_PH     = 35;  // pH: ขา Po ผ่านตัวแบ่งแรงดัน 10k/20k
-const int PIN_TEMP   = 32;  // NTC 10k + ตัวต้านทาน 10k ไป 3V3
+const int PIN_PH     = 35;  // pH: ขา Po ผ่านตัวแบ่งแรงดัน 4.7k/4.7k
+const int PIN_TEMP   = 32;  // NTC 10k + ตัวต้านทาน 4.7k ไป 3V3
 const int PIN_BUTTON = 15;  // ปุ่มเขียว (อีกขาต่อ GND)
 const int PIN_SDA    = 21;
 const int PIN_SCL    = 22;
 
 // ================= ค่าวงจร =================
 const float VREF_MV         = 3300.0;   // ไฟเลี้ยงตัวแบ่งแรงดัน NTC (3V3)
-const float NTC_SERIES_OHM  = 10000.0;  // ตัวต้านทานที่ต่อกับ NTC
+const float NTC_SERIES_OHM  = 4700.0;   // ตัวต้านทานที่ต่อกับ NTC (4.7k)
 const float NTC_NOMINAL_OHM = 10000.0;  // NTC 10k ที่ 25°C
 const float NTC_BETA        = 3950.0;   // ค่า B ของ NTC
-const float PH_DIVIDER      = 1.5;      // (10k + 20k) / 20k
+const float PH_DIVIDER      = 2.0;      // (4.7k + 4.7k) / 4.7k  ถ้าใช้ 10k+20k ให้แก้เป็น 1.5
 
 // ค่าที่ใช้ตัดสินว่า "เซนเซอร์ไม่ได้ต่อ"
 const float NOISE_SPREAD_MV = 250.0;    // สัญญาณแกว่งเกินนี้ = สายลอย

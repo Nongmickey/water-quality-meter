@@ -89,22 +89,50 @@
 <polyline points="230,174 540,174" fill="none" stroke="#8e44ad" stroke-width="3" stroke-linejoin="round"/>
 <polyline points="230,245 540,245" fill="none" stroke="#1d8a4a" stroke-width="3" stroke-linejoin="round"/>
 <polyline points="230,381 540,381" fill="none" stroke="#0b8a96" stroke-width="3" stroke-linejoin="round"/>
+<rect x="483.0" y="373" width="44" height="16" rx="3" fill="#f3e3c3" stroke="#6b4f1d" stroke-width="2"/>
+<text x="505.0" y="407" font-size="13" fill="#6b4f1d" text-anchor="middle" font-weight="bold">4.7kΩ</text>
+<polyline points="400,381 400,393.5" fill="none" stroke="#2b2b2b" stroke-width="2" stroke-linejoin="round"/>
+<polyline points="400,401.5 400,414" fill="none" stroke="#2b2b2b" stroke-width="2" stroke-linejoin="round"/>
+<rect x="390" y="391.5" width="20" height="3" fill="#1d5fa8"/>
+<rect x="390" y="400.5" width="20" height="3" fill="#1d5fa8"/>
+<text x="386" y="393.5" font-size="11" fill="#1d5fa8" text-anchor="end" font-weight="bold">+</text>
+<text x="414" y="401.5" font-size="11.5" fill="#1d5fa8" text-anchor="start" font-weight="bold">10µF+104</text>
+<polyline points="400,414 330,414" fill="none" stroke="#2b2b2b" stroke-width="3" stroke-linejoin="round"/>
+<circle cx="330" cy="414" r="5" fill="#2b2b2b"/>
+<circle cx="400" cy="381" r="5" fill="#111"/>
 <polyline points="540,491 230,491" fill="none" stroke="#a0522d" stroke-width="3" stroke-linejoin="round"/>
-<rect x="448.0" y="483" width="44" height="16" rx="3" fill="#f3e3c3" stroke="#6b4f1d" stroke-width="2"/>
-<text x="470.0" y="517" font-size="13" fill="#6b4f1d" text-anchor="middle" font-weight="bold">10kΩ</text>
-<polyline points="400,491 400,560 330,560" fill="none" stroke="#2b2b2b" stroke-width="3" stroke-linejoin="round"/>
-<rect x="392" y="508.0" width="16" height="44" rx="3" fill="#f3e3c3" stroke="#6b4f1d" stroke-width="2"/>
-<text x="414" y="535.0" font-size="13" fill="#6b4f1d" text-anchor="start" font-weight="bold">20kΩ</text>
+<rect x="483.0" y="483" width="44" height="16" rx="3" fill="#f3e3c3" stroke="#6b4f1d" stroke-width="2"/>
+<text x="505.0" y="517" font-size="13" fill="#6b4f1d" text-anchor="middle" font-weight="bold">4.7kΩ</text>
+<polyline points="370,491 370,560" fill="none" stroke="#2b2b2b" stroke-width="3" stroke-linejoin="round"/>
+<rect x="362" y="508.0" width="16" height="44" rx="3" fill="#f3e3c3" stroke="#6b4f1d" stroke-width="2"/>
+<text x="384" y="535.0" font-size="13" fill="#6b4f1d" text-anchor="start" font-weight="bold">4.7kΩ</text>
+<polyline points="440,491 440,521.5" fill="none" stroke="#2b2b2b" stroke-width="2" stroke-linejoin="round"/>
+<polyline points="440,529.5 440,560" fill="none" stroke="#2b2b2b" stroke-width="2" stroke-linejoin="round"/>
+<rect x="430" y="519.5" width="20" height="3" fill="#1d5fa8"/>
+<rect x="430" y="528.5" width="20" height="3" fill="#1d5fa8"/>
+<text x="426" y="521.5" font-size="11" fill="#1d5fa8" text-anchor="end" font-weight="bold">+</text>
+<text x="454" y="539.5" font-size="11.5" fill="#1d5fa8" text-anchor="start" font-weight="bold">10µF+104</text>
+<polyline points="440,560 330,560" fill="none" stroke="#2b2b2b" stroke-width="3" stroke-linejoin="round"/>
+<circle cx="370" cy="491" r="5" fill="#111"/>
+<circle cx="440" cy="491" r="5" fill="#111"/>
+<circle cx="370" cy="560" r="5" fill="#2b2b2b"/>
 <circle cx="330" cy="560" r="5" fill="#2b2b2b"/>
-<circle cx="400" cy="491" r="5" fill="#111"/>
 <polyline points="540,605 230,605" fill="none" stroke="#c2185b" stroke-width="3" stroke-linejoin="round"/>
-<circle cx="420" cy="605" r="5" fill="#111"/>
-<polyline points="420,605 420,680 296,680" fill="none" stroke="#e08a1e" stroke-width="3" stroke-linejoin="round"/>
-<rect x="412" y="621.5" width="16" height="44" rx="3" fill="#f3e3c3" stroke="#6b4f1d" stroke-width="2"/>
-<text x="434" y="648.5" font-size="13" fill="#6b4f1d" text-anchor="start" font-weight="bold">10kΩ</text>
+<circle cx="400" cy="605" r="5" fill="#111"/>
+<polyline points="400,605 400,680 296,680" fill="none" stroke="#e08a1e" stroke-width="3" stroke-linejoin="round"/>
+<rect x="392" y="621.5" width="16" height="44" rx="3" fill="#f3e3c3" stroke="#6b4f1d" stroke-width="2"/>
+<text x="386" y="648.5" font-size="13" fill="#6b4f1d" text-anchor="end" font-weight="bold">4.7kΩ</text>
+<polyline points="450,605 450,648.5" fill="none" stroke="#2b2b2b" stroke-width="2" stroke-linejoin="round"/>
+<polyline points="450,656.5 450,700" fill="none" stroke="#2b2b2b" stroke-width="2" stroke-linejoin="round"/>
+<rect x="440" y="646.5" width="20" height="3" fill="#1d5fa8"/>
+<rect x="440" y="655.5" width="20" height="3" fill="#1d5fa8"/>
+<text x="436" y="648.5" font-size="11" fill="#1d5fa8" text-anchor="end" font-weight="bold">+</text>
+<text x="464" y="656.5" font-size="11.5" fill="#1d5fa8" text-anchor="start" font-weight="bold">10µF+104</text>
+<circle cx="450" cy="605" r="5" fill="#111"/>
+<circle cx="450" cy="700" r="5" fill="#2b2b2b"/>
 <circle cx="296" cy="680" r="5" fill="#e08a1e"/>
-<polyline points="540,630 515,630 515,700 330,700" fill="none" stroke="#2b2b2b" stroke-width="3" stroke-linejoin="round"/>
+<polyline points="540,630 528,630 528,700 330,700" fill="none" stroke="#2b2b2b" stroke-width="3" stroke-linejoin="round"/>
 <circle cx="330" cy="700" r="5" fill="#2b2b2b"/>
-<text x="30" y="752" font-size="12.5" fill="#587480" text-anchor="start">● จุด = ต่อกัน · เส้นที่ตัดกันโดยไม่มีจุด = ไม่ต่อกัน · 10kΩ = น้ำตาล-ดำ-ส้ม-ทอง · 20kΩ = แดง-ดำ-ส้ม-ทอง (หรือใช้ 10kΩ 2 ตัวต่อกัน)</text>
-<text x="30" y="770" font-size="12.5" fill="#587480" text-anchor="start">ขาอนาล็อก (D32, D34, D35) ต้องอยู่กลุ่ม 32–39 เท่านั้น · จ่ายไฟผ่านสาย USB</text>
+<text x="30" y="752" font-size="12.5" fill="#587480" text-anchor="start">● จุด = ต่อกัน · เส้นที่ตัดกันโดยไม่มีจุด = ไม่ต่อกัน · 4.7kΩ = เหลือง-ม่วง-แดง-ทอง · 10µF ขา + (ขายาว) ไปขาสัญญาณ · 104 ไม่มีขั้ว เสียบขนานกับ 10µF</text>
+<text x="30" y="770" font-size="12.5" fill="#587480" text-anchor="start">100µF: ต่อคร่อม 3V3–GND 1 ตัว และ 5V–GND 1 ตัว ใกล้เซนเซอร์ (ขา + ไปฝั่งไฟ) · ขาอนาล็อก D32, D34, D35 ต้องอยู่กลุ่ม 32–39</text>
 </svg>

@@ -29,16 +29,30 @@ def text(x, y, t, size=14, fill="#102a32", anchor="start", bold=False):
     A(f'<text x="{x}" y="{y}" font-size="{size}" fill="{fill}" text-anchor="{anchor}"{b}>{t}</text>')
 
 
-def res_v(x, y1, y2, label):
+def res_v(x, y1, y2, label, left=False):
     m = (y1 + y2) / 2
     A(f'<rect x="{x-8}" y="{m-22}" width="16" height="44" rx="3" fill="#f3e3c3" stroke="#6b4f1d" stroke-width="2"/>')
-    text(x + 14, m + 5, label, 13, "#6b4f1d", bold=True)
+    if left:
+        text(x - 14, m + 5, label, 13, "#6b4f1d", "end", True)
+    else:
+        text(x + 14, m + 5, label, 13, "#6b4f1d", bold=True)
 
 
 def res_h(x1, x2, y, label):
     m = (x1 + x2) / 2
     A(f'<rect x="{m-22}" y="{y-8}" width="44" height="16" rx="3" fill="#f3e3c3" stroke="#6b4f1d" stroke-width="2"/>')
     text(m, y + 26, label, 13, "#6b4f1d", "middle", True)
+
+
+def cap_v(x, y1, y2, label, dy=4):
+    """ตัวเก็บประจุแนวตั้ง (10µF มีขั้ว + ขนานกับ 104)"""
+    m = (y1 + y2) / 2
+    line([(x, y1), (x, m - 4)], "#2b2b2b", 2)
+    line([(x, m + 4), (x, y2)], "#2b2b2b", 2)
+    A(f'<rect x="{x-10}" y="{m-6}" width="20" height="3" fill="#1d5fa8"/>')
+    A(f'<rect x="{x-10}" y="{m+3}" width="20" height="3" fill="#1d5fa8"/>')
+    text(x - 14, m - 4, "+", 11, "#1d5fa8", "end", True)
+    text(x + 14, m + dy, label, 11.5, "#1d5fa8", bold=True)
 
 
 def module(y1, y2, title, sub, pins):
@@ -92,25 +106,33 @@ line([(230, 151), (MX, 151)], "#2b6fd6")
 line([(230, 174), (MX, 174)], "#8e44ad")
 line([(230, 245), (MX, 245)], "#1d8a4a")
 line([(230, 381), (MX, 381)], "#0b8a96")
+res_h(483, 527, 381, "4.7kΩ")
+cap_v(400, 381, 414, "10µF+104")
+line([(400, 414), (XG, 414)], CG); dot(XG, 414, CG); dot(400, 381)
 
-# pH: Po -> 10k -> จุดต่อ -> D35 ; จุดต่อ -> 20k -> GND
-NP = 400
+# pH: Po -> 4.7k -> จุดต่อ -> D35 ; จุดต่อ -> 4.7k -> GND ; จุดต่อ -> 10µF+104 -> GND
+NP = 370
 line([(MX, 491), (230, 491)], "#a0522d")
-res_h(440, 500, 491, "10kΩ")
-line([(NP, 491), (NP, 560), (XG, 560)], CG)
-res_v(NP, 500, 560, "20kΩ")
-dot(XG, 560, CG); dot(NP, 491)
+res_h(483, 527, 491, "4.7kΩ")
+line([(NP, 491), (NP, 560)], CG)
+res_v(NP, 500, 560, "4.7kΩ")
+cap_v(440, 491, 560, "10µF+104", dy=14)
+line([(440, 560), (XG, 560)], CG)
+dot(NP, 491); dot(440, 491); dot(NP, 560, CG); dot(XG, 560, CG)
 
-# NTC: 3V3 -> 10k -> จุดต่อ -> D32 ; จุดต่อ -> NTC -> GND
-NT = 420
+# NTC: 3V3 -> 4.7k -> จุดต่อ -> D32 ; จุดต่อ -> NTC -> GND ; จุดต่อ -> 10µF+104 -> GND
+NT = 400
 line([(MX, 605), (230, 605)], "#c2185b"); dot(NT, 605)
 line([(NT, 605), (NT, 680), (X33, 680)], C33)
-res_v(NT, 615, 672, "10kΩ"); dot(X33, 680, C33)
-line([(MX, 630), (515, 630), (515, 700), (XG, 700)], CG); dot(XG, 700, CG)
+res_v(NT, 615, 672, "4.7kΩ", left=True)
+cap_v(450, 605, 700, "10µF+104")
+dot(450, 605); dot(450, 700, CG); dot(X33, 680, C33)
+line([(MX, 630), (528, 630), (528, 700), (XG, 700)], CG); dot(XG, 700, CG)
 
-text(30, 752, "● จุด = ต่อกัน · เส้นที่ตัดกันโดยไม่มีจุด = ไม่ต่อกัน · 10kΩ = น้ำตาล-ดำ-ส้ม-ทอง · "
-     "20kΩ = แดง-ดำ-ส้ม-ทอง (หรือใช้ 10kΩ 2 ตัวต่อกัน)", 12.5, "#587480")
-text(30, 770, "ขาอนาล็อก (D32, D34, D35) ต้องอยู่กลุ่ม 32–39 เท่านั้น · จ่ายไฟผ่านสาย USB", 12.5, "#587480")
+text(30, 752, "● จุด = ต่อกัน · เส้นที่ตัดกันโดยไม่มีจุด = ไม่ต่อกัน · 4.7kΩ = เหลือง-ม่วง-แดง-ทอง · "
+     "10µF ขา + (ขายาว) ไปขาสัญญาณ · 104 ไม่มีขั้ว เสียบขนานกับ 10µF", 12.5, "#587480")
+text(30, 770, "100µF: ต่อคร่อม 3V3–GND 1 ตัว และ 5V–GND 1 ตัว ใกล้เซนเซอร์ (ขา + ไปฝั่งไฟ) · "
+     "ขาอนาล็อก D32, D34, D35 ต้องอยู่กลุ่ม 32–39", 12.5, "#587480")
 A("</svg>")
 
 OUT.write_text("\n".join(out), encoding="utf-8")
