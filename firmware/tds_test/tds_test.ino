@@ -63,7 +63,9 @@ String ppm(float v) { return isnan(v) ? String("-") : String(v, 0) + " ppm"; }
 
 void initLcd() {
   Wire.begin(PIN_SDA, PIN_SCL);
-  const uint8_t candidates[] = {0x27, 0x3F};
+  // โมดูล I2C ของจอใช้ที่อยู่ 0x20-0x27 (PCF8574) หรือ 0x38-0x3F (PCF8574A) ไล่หาทุกค่า
+  const uint8_t candidates[] = {0x27, 0x3F, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26,
+                                0x38, 0x39, 0x3A, 0x3B, 0x3C, 0x3D, 0x3E};
   for (uint8_t a : candidates) {
     Wire.beginTransmission(a);
     if (Wire.endTransmission() == 0) {
