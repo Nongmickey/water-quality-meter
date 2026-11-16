@@ -28,7 +28,7 @@ LiquidCrystal_I2C *lcd = nullptr;
 WebServer server(80);
 Preferences prefs;
 
-float phNeutralMv = 2500.0;  // แรงดันโมดูล pH (ก่อนแบ่ง) ในน้ำยา pH 7.00
+float phNeutralMv = 2500.0;  // แรงดันโมดูล pH (ก่อนแบ่ง) ในน้ำยาจุดกลาง (PH_BUFFER_MID = 6.86)
 float phAcidMv    = 3030.0;  // แรงดันโมดูล pH (ก่อนแบ่ง) ในน้ำยา pH 4.00
 float tdsK        = 1.0;
 
@@ -101,13 +101,15 @@ float readTds(float tempC) {
   Sample s = readPin(PIN_TDS);
   rawTdsMv = s.mv;
   if (s.spread > NOISE_SPREAD_MV) return NAN;  // ไม่ได้ต่อโมดูล
-  if (s.mv < TDS_MIN_MV) return NAN;           // หัววัดไม่ได้อยู่ในน้ำ
+  if (s.mv < TDS_MIN_MV) return 0;             // ต่ำกว่าที่ ESP32 อ่านได้ (<60 ppm) หรือไม่ได้จุ่มน้ำ
   return tdsFromMv(s.mv, tempC);
 }
 
 float phFromModuleMv(float moduleMv) {
-  float slope = (7.0 - 4.0) / (phNeutralMv - phAcidMv);  // pH ต่อ mV
-  return constrain(7.0 + slope * (moduleMv - phNeutralMv), 0.0, 14.0);
+  float diff = phNeutralMv - phAcidMv;
+  if (fabs(diff) < 50) diff = -530;                                 // คาลิเบรตผิด (ค่าสองจุดใกล้กันเกิน) ใช้ค่ามาตรฐาน
+  float slope = (PH_BUFFER_MID - PH_BUFFER_LOW) / diff;             // pH ต่อ mV
+  return constrain(PH_BUFFER_MID + slope * (moduleMv - phNeutralMv), 0.0, 14.0);
 }
 
 float readPh() {
@@ -192,7 +194,7 @@ void drawLcd() {
     return;
   }
   lcdLine(0, "pH  : " + fmt(live.ph, 2));
-  lcdLine(1, "TDS : " + (isnan(live.tds) ? String("-") : fmt(live.tds, 0) + " ppm"));
+  lcdLine(1, "TDS : " + (isnan(live.tds) ? String("-") : live.tds < 1 ? String("<60 ppm") : fmt(live.tds, 0) + " ppm"));
   lcdLine(2, "Temp: " + (isnan(live.temp) ? String("-") : fmt(live.temp, 1) + " C"));
   if (millis() < statusUntil) {
     lcdLine(3, statusLine);
@@ -291,7 +293,7 @@ void handleRoot() {
 
 // ================= คาลิเบรตผ่าน Serial Monitor =================
 void printHelp() {
-  Serial.println(F("คำสั่ง: cal7 | cal4 | tds <ppmจริง> | show | reset"));
+  Serial.println(F("คำสั่ง: cal7 (จุ่มน้ำยา pH 6.86) | cal4 (จุ่มน้ำยา pH 4.00) | tds <ppmจริง> | show | reset"));
 }
 
 void handleSerial() {

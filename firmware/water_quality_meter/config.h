@@ -17,10 +17,14 @@ const float NTC_SERIES_OHM  = 4700.0;   // ตัวต้านทานที�
 const float NTC_NOMINAL_OHM = 10000.0;  // NTC 10k ที่ 25°C
 const float NTC_BETA        = 3950.0;   // ค่า B ของ NTC
 const float PH_DIVIDER      = 2.0;      // (4.7k + 4.7k) / 4.7k  ถ้าใช้ 10k+20k ให้แก้เป็น 1.5
+const float PH_BUFFER_MID   = 6.86;     // น้ำยาคาลิเบรตจุดกลาง (คำสั่ง cal7) ถ้าใช้น้ำยา pH 7.00 ให้แก้เป็น 7.0
+const float PH_BUFFER_LOW   = 4.00;     // น้ำยาคาลิเบรตจุดกรด (คำสั่ง cal4)
 
 // ค่าที่ใช้ตัดสินว่า "เซนเซอร์ไม่ได้ต่อ"
 const float NOISE_SPREAD_MV = 250.0;    // สัญญาณแกว่งเกินนี้ = สายลอย
-const float TDS_MIN_MV      = 10.0;     // ต่ำกว่านี้ = หัววัดไม่ได้จุ่มน้ำ
+// ESP32 อ่านแรงดันต่ำสุดได้ประมาณ 142 mV (ไฟเข้า 0 V ก็ยังอ่านได้ 142 mV = สูตรให้ 58 ppm)
+// ต่ำกว่าค่านี้ = TDS ต่ำกว่าที่วัดได้ (ประมาณ 60 ppm) หรือหัววัดไม่ได้จุ่มน้ำ -> ส่งเป็น 0 แสดงเป็น "<60"
+const float TDS_MIN_MV      = 150.0;
 const float PH_MIN_MV       = 150.0;    // ที่ขา ESP32, ต่ำกว่านี้ = ไม่ได้ต่อโมดูล pH
 const float ADC_MAX_MV      = 3150.0;   // ใกล้เพดาน ADC = ค่าเชื่อไม่ได้
 

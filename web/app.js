@@ -7,6 +7,10 @@ function erfc(x) { // Abramowitz & Stegun 7.1.26
 }
 function logPdf(x, m, s) { const z = (x - m) / s; return -0.5 * z * z - Math.log(s) - 0.9189385; }
 function logSurvival(x, m, s) { return Math.log(Math.max(1e-300, 0.5 * erfc((x - m) / (s * Math.SQRT2)))); }
+function logCdf(x, m, s) { return Math.log(Math.max(1e-300, 0.5 * erfc(-(x - m) / (s * Math.SQRT2)))); }
+// ESP32 อ่าน TDS ต่ำกว่าประมาณ 60 ppm ไม่ได้ (เครื่องส่งมาเป็น 0) จึงถือว่า "ต่ำกว่า 60"
+const tdsMin = () => MODEL.tds_min || 60;
+const tdsUnder = v => has(v) && v < tdsMin();
 const has = v => typeof v === "number" && isFinite(v);
 
 /* ===== ประเมินแหล่งน้ำ ===== */
@@ -14,12 +18,14 @@ function classify(v) {
   if (!has(v.ph) && !has(v.tds)) return null;
   const tdsMax = MODEL.tds_max || 1000;
   const overRange = has(v.tds) && v.tds >= tdsMax * 0.99;
+  const underRange = tdsUnder(v.tds);
   const x = [v.ph, has(v.tds) ? Math.log10(Math.max(v.tds, 1)) : null, v.temp];
   const scores = MODEL.classes.map(c => {
     let lp = Math.log(c.prior || 1);
     for (let i = 0; i < 3; i++) {
       if (!has(x[i])) continue;
       if (i === 1 && overRange) lp += logSurvival(Math.log10(tdsMax * 0.99), c.mean[1], c.std[1]);
+      else if (i === 1 && underRange) lp += logCdf(Math.log10(tdsMin()), c.mean[1], c.std[1]);
       else lp += logPdf(x[i], c.mean[i], c.std[i]);
     }
     return { c, lp };
@@ -61,8 +67,10 @@ function analyzeTds(tds) {
   else if (tds <= 900) { st = "warn"; label = "พอใช้"; score = 60; desc = "แร่ธาตุค่อนข้างมาก อาจมีรสกร่อยหรือเกิดตะกรัน"; }
   else if (tds <= 1200) { st = "bad"; label = "ไม่ดี"; score = 35; desc = "สารละลายสูง ไม่เหมาะดื่ม ควรกรองด้วยระบบ RO"; }
   else { st = "bad"; label = "แย่"; score = 15; desc = "สารละลายสูงมาก ไม่ควรดื่ม"; }
+  const under = tdsUnder(tds);
+  if (under) { label = "ต่ำกว่า " + tdsMin() + " ppm"; desc = "ต่ำกว่าค่าต่ำสุดที่เครื่องวัดได้ น้ำมีแร่ธาตุน้อยมาก เช่น น้ำ RO น้ำกลั่น น้ำฝน หรือน้ำดื่มบางยี่ห้อ (หรือหัววัดไม่ได้จุ่มน้ำ)"; }
   if (over) { label = "เกินช่วงวัด"; desc = "ค่าเกิน 1,000 ppm ซึ่งเป็นขีดสูงสุดของเซนเซอร์ ค่าจริงอาจสูงกว่านี้มาก " + desc; st = "bad"; score = 15; }
-  return { st, label, score, desc, ec: tds / 0.5, over };
+  return { st, label, score, desc, ec: tds / 0.5, over, under };
 }
 
 function analyzeTemp(t) {
@@ -167,6 +175,7 @@ function analyze(v) {
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const f = (v, d) => (has(v) ? v.toFixed(d) : "-");
+const fTds = v => (tdsUnder(v) ? "<" + tdsMin() : f(v, 0));
 const ST_TEXT = { good: "เหมาะ", warn: "ใช้ได้บางส่วน", bad: "ไม่เหมาะ", none: "ไม่ทราบ" };
 
 function fmtTime(ms) {
@@ -232,9 +241,9 @@ function renderReport(rec) {
       </div>
       <div class="param">
         <div><div class="name">TDS สารที่ละลายในน้ำ</div><span class="pill s-${a.tds.st}">${esc(a.tds.label)}</span></div>
-        <div class="val">${f(v.tds, 0)} <small>ppm</small></div>
+        <div class="val">${fTds(v.tds)} <small>ppm</small></div>
         ${scaleHtml("tds", v.tds)}
-        <div class="desc">${esc(a.tds.desc)}${has(v.tds) ? ` · ค่าการนำไฟฟ้าโดยประมาณ <span class="num">${Math.round(a.tds.ec)}</span> µS/cm` : ""}</div>
+        <div class="desc">${esc(a.tds.desc)}${has(v.tds) && !a.tds.under ? ` · ค่าการนำไฟฟ้าโดยประมาณ <span class="num">${Math.round(a.tds.ec)}</span> µS/cm` : ""}</div>
       </div>
       <div class="param">
         <div><div class="name">อุณหภูมิน้ำ</div><span class="pill s-${a.temp.st}">${esc(a.temp.label)}</span></div>
@@ -283,7 +292,7 @@ function renderHistory() {
     const a = analyze(h.values);
     const top = a.source ? a.source[0].name : "-";
     return `<tr><td>${esc(fmtTime(h.time))}</td><td>${esc(h.location || "-")}</td>
-      <td class="n">${f(h.values.ph, 2)}</td><td class="n">${f(h.values.tds, 0)}</td><td class="n">${f(h.values.temp, 1)}</td>
+      <td class="n">${f(h.values.ph, 2)}</td><td class="n">${fTds(h.values.tds)}</td><td class="n">${f(h.values.temp, 1)}</td>
       <td><span class="pill s-${a.grade.st}">${a.score === null ? "–" : a.score}</span></td><td>${esc(top)}</td>
       <td><select data-key="${esc(h.key)}" aria-label="แหล่งน้ำจริง">${opts.replace(`value="${h.truth || ""}"`, `value="${h.truth || ""}" selected`)}</select></td></tr>`;
   }).join("") : `<tr><td colspan="8" class="muted">ยังไม่มีประวัติ ผลตรวจทุกครั้งจะถูกบันทึกไว้ที่นี่</td></tr>`;
@@ -363,7 +372,7 @@ let lastKey = null;
 let mode = "";
 
 function setConn(kind, text) { $("conn-dot").className = "dot " + kind; $("conn-text").textContent = text; }
-function setLive(v) { $("live-ph").textContent = f(v.ph, 2); $("live-tds").textContent = f(v.tds, 0); $("live-temp").textContent = f(v.temp, 1); }
+function setLive(v) { $("live-ph").textContent = f(v.ph, 2); $("live-tds").textContent = fTds(v.tds); $("live-temp").textContent = f(v.temp, 1); }
 
 async function getJson(url, opts, timeoutMs) {
   const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), timeoutMs || 3000);
