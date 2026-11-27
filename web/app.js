@@ -233,7 +233,7 @@ function renderReport(rec) {
   <article class="slip" aria-live="polite">
     <div class="slip-head">
       <div class="meta">
-        <span class="eyebrow">ใบรายงานผล${rec.example ? ` <span class="tag">ตัวอย่าง</span>` : ""}</span>
+        <span class="eyebrow">ใบรายงานผล${rec.example ? ` <span class="tag">ตัวอย่าง</span>` : ""}${rec.cal === false ? ` <span class="tag">ค่าดิบ · ยังไม่คาลิเบรต</span>` : ""}</span>
         <span>🕒 ${esc(fmtTime(rec.time))}${esc(timeNote(rec))}</span>
         <span>📍 ${rec.location ? esc(rec.location) : "ไม่ได้ระบุสถานที่"}${rec.gps ? ` · <a href="https://maps.google.com/?q=${rec.gps.lat},${rec.gps.lon}" target="_blank" rel="noopener">${rec.gps.lat.toFixed(5)}, ${rec.gps.lon.toFixed(5)}</a>` : ""}</span>
         ${rec.stable === true ? `<span>✅ ค่านิ่งใน ${rec.wait} วินาที แล้วเฉลี่ย 6 ค่าล่าสุด</span>` : ""}
@@ -268,6 +268,7 @@ function renderReport(rec) {
         <div class="val">${f(v.temp, 1)} <small>°C</small></div>
         <div class="desc">${esc(a.temp.desc)}</div>
       </div>
+      ${rec.raw ? `<div><div class="hint">แรงดันดิบที่อ่านได้ (เฉลี่ยตอนค่านิ่ง)</div><div class="rawbox"><span>pH (Po) ${Math.round(rec.raw.ph_mv)} mV</span><span>TDS (A) ${Math.round(rec.raw.tds_mv)} mV</span><span>NTC ${Math.round(rec.raw.temp_mv)} mV</span></div></div>` : ""}
     </section>
 
     <section>
@@ -325,10 +326,14 @@ function drawSpark(k) {
   const line = pts.map(p => p[0].toFixed(1) + "," + p[1].toFixed(1)).join(" ");
   el.innerHTML = `<polygon points="${line} ${pts[pts.length - 1][0].toFixed(1)},30 ${pts[0][0].toFixed(1)},30"/><polyline points="${line}"/>`;
 }
-function setLive(v) {
+function setLive(v, raw) {
   $("live-ph").textContent = f(v.ph, 2);
   $("live-tds").textContent = fTds(v.tds);
   $("live-temp").textContent = f(v.temp, 1);
+  const mv = x => (raw && has(x) ? Math.round(x) + " mV" : "");
+  $("raw-ph").textContent = mv(raw && raw.ph_mv);
+  $("raw-tds").textContent = mv(raw && raw.tds_mv);
+  $("raw-temp").textContent = mv(raw && raw.temp_mv);
   ["ph", "tds", "temp"].forEach(k => {
     liveBuf[k].push(has(v[k]) ? v[k] : null);
     if (liveBuf[k].length > 60) liveBuf[k].shift();
@@ -377,12 +382,14 @@ function addRecord(rec) {
 }
 
 function toCsv() {
-  const rows = [["time_iso", "location", "lat", "lon", "ph", "tds", "temp", "stable", "source_guess", "source_true"]];
+  const rows = [["time_iso", "location", "lat", "lon", "ph", "tds", "temp", "stable", "calibrated", "raw_ph_mv", "raw_tds_mv", "raw_temp_mv", "source_guess", "source_true"]];
   byTime().forEach(h => {
     const a = analyze(h.values);
     rows.push([h.timeSource === "unknown" ? "" : new Date(h.time).toISOString(), h.location || "", h.gps ? h.gps.lat : "", h.gps ? h.gps.lon : "",
       has(h.values.ph) ? h.values.ph : "", has(h.values.tds) ? h.values.tds : "", has(h.values.temp) ? h.values.temp : "",
-      h.stable === false ? "no" : "yes", a.source ? a.source[0].id : "", h.truth || ""]);
+      h.stable === false ? "no" : "yes", h.cal === false ? "no" : "yes",
+      h.raw ? Math.round(h.raw.ph_mv) : "", h.raw ? Math.round(h.raw.tds_mv) : "", h.raw ? Math.round(h.raw.temp_mv) : "",
+      a.source ? a.source[0].id : "", h.truth || ""]);
   });
   return rows.map(r => r.map(c => /[",\n]/.test(String(c)) ? `"${String(c).replace(/"/g, '""')}"` : c).join(",")).join("\n");
 }
@@ -556,7 +563,8 @@ function recordFromDevice(it, live) {
     key: "dev-" + it.id, label: "#" + it.id,
     time: known ? it.epoch * 1000 : Date.now(),
     timeSource: known ? "device" : (live ? "phone" : "unknown"),
-    stable: it.stable, wait: it.wait
+    stable: it.stable, wait: it.wait,
+    raw: it.raw || null, cal: it.cal !== false
   });
   if (!live) { rec.location = ""; rec.gps = null; }   // วัดตอนมือถือไม่ได้ดูอยู่ ไม่รู้สถานที่
   return rec;
@@ -566,7 +574,8 @@ async function poll() {
   try {
     const s = await getJson(apiBase + "/api/state");
     setConn("on", "เชื่อมต่อเครื่องวัดแล้ว");
-    setLive(s.live);
+    setLive(s.live, s.raw);
+    $("raw-note").hidden = !s.raw_mode;
     setBusy(s.busy, s.busy_s || 0, s.busy_max || 30);
     if (s.busy) sawBusy = true;
     if (!s.time_set) fetch(apiBase + "/api/time?epoch=" + Math.floor(Date.now() / 1000), { method: "POST" }).catch(() => {});

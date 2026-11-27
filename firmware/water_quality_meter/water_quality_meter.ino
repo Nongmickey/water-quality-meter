@@ -17,6 +17,7 @@
  *          แล้วคูณค่าปรับเทียบ K ที่ได้จากน้ำยามาตรฐาน
  *   - อุณหภูมิ: NTC 10k สมการ Beta (B = 3950)
  *   - เก็บผลตรวจล่าสุด 80 ครั้งไว้ในเครื่อง (ไม่หายเมื่อถอดปลั๊ก) หน้าเว็บดึงไปทำกราฟและประวัติได้
+ *   - RAW_MODE = true (config.h): ยังไม่คาลิเบรต ใช้สูตรมาตรฐาน และส่งแรงดันดิบ (mV) ไปด้วยทุกครั้ง
  *
  * แก้ขาและค่าต่างๆ ได้ในแท็บ config.h
  * หน้าเว็บอยู่ในไฟล์ web_page.h (สร้างจากโฟลเดอร์ web/ ด้วย tools/build_web.py)
@@ -63,6 +64,7 @@ struct Reading {
   uint32_t ms = 0;       // millis() ตอนวัดเสร็จ
   bool stable = false;   // ค่านิ่งตามเกณฑ์หรือไม่
   uint8_t wait = 0;      // วินาทีที่รอค่านิ่ง
+  float mv[3] = {0, 0, 0};  // แรงดันดิบเฉลี่ย (mV): ขา Po ของ pH, ขา A ของ TDS, NTC
 };
 Reading last;
 uint32_t bootId = 0;
@@ -74,6 +76,7 @@ bool measureRequested = false;
 bool measuring = false;
 unsigned long measureStart = 0, nextSampleAt = 0;
 Values win[STABLE_WINDOW];
+float winMv[STABLE_WINDOW][3];   // แรงดันดิบของแต่ละค่าใน window
 int winCount = 0, winPos = 0;
 
 // บันทึกผลตรวจในเครื่อง (วนทับเมื่อเต็ม)
@@ -85,8 +88,9 @@ struct __attribute__((packed)) LogEntry {
   int16_t  ph100;    // pH x100 (INT16_MIN = ไม่ได้วัด)
   int16_t  tds;      // ppm (-1 = ไม่ได้วัด)
   int16_t  temp10;   // °C x10 (INT16_MIN = ไม่ได้วัด)
-  uint8_t  flags;    // bit0 = ค่านิ่ง
+  uint8_t  flags;    // bit0 = ค่านิ่ง, bit1 = ใช้ค่าคาลิเบรต
   uint8_t  wait;     // วินาทีที่รอค่านิ่ง
+  uint16_t mv[3];    // แรงดันดิบ (mV): pH Po, TDS A, NTC
 };
 LogEntry logBuf[LOG_SIZE];
 uint8_t logHead = 0, logCount = 0;
@@ -220,6 +224,8 @@ void drawLcd() {
   lcdLine(2, "Temp: " + (isnan(live.temp) ? String("-") : fmt(live.temp, 1) + " C"));
   if (millis() < statusUntil) {
     lcdLine(3, statusLine);
+  } else if (RAW_MODE) {        // โหมดค่าดิบ: แสดงแรงดันดิบ pH/TDS/อุณหภูมิ (mV)
+    lcdLine(3, "mV " + String(rawPhMv, 0) + "/" + String(rawTdsMv, 0) + "/" + String(rawTempMv, 0));
   } else if (WiFi.softAPgetStationNum() == 0) {
     lcdLine(3, "WiFi: " + String(AP_SSID));
   } else {
@@ -252,8 +258,9 @@ void logAppend(const Reading &r) {
   e.ph100 = isnan(r.v.ph) ? INT16_MIN : (int16_t)lroundf(r.v.ph * 100);
   e.tds = isnan(r.v.tds) ? -1 : (int16_t)lroundf(fminf(r.v.tds, 30000));
   e.temp10 = isnan(r.v.temp) ? INT16_MIN : (int16_t)lroundf(r.v.temp * 10);
-  e.flags = r.stable ? 1 : 0;
+  e.flags = (r.stable ? 1 : 0) | (RAW_MODE ? 0 : 2);
   e.wait = r.wait;
+  for (int k = 0; k < 3; k++) e.mv[k] = (uint16_t)lroundf(fmaxf(0, fminf(r.mv[k], 65000)));
   logHead = (logHead + 1) % LOG_SIZE;
   if (logCount < LOG_SIZE) logCount++;
   logSave();
@@ -296,7 +303,7 @@ void startMeasure() {
   Serial.println("เริ่มวัด: รอค่านิ่ง...");
 }
 
-void finishMeasure(const Values &v, bool stable, unsigned long elapsed) {
+void finishMeasure(const Values &v, const float *mv, bool stable, unsigned long elapsed) {
   measuring = false;
   uint32_t seq = prefs.getULong("seq", 0) + 1;
   prefs.putULong("seq", seq);
@@ -306,11 +313,13 @@ void finishMeasure(const Values &v, bool stable, unsigned long elapsed) {
   last.ms = millis();
   last.stable = stable;
   last.wait = (uint8_t)min(elapsed / 1000, 255UL);
+  for (int k = 0; k < 3; k++) last.mv[k] = mv[k];
   logAppend(last);
 
-  Serial.printf("ผลตรวจ #%u: pH=%s TDS=%s T=%s  %s (%u วินาที)\n", last.id,
+  Serial.printf("ผลตรวจ #%u: pH=%s TDS=%s T=%s  %s (%u วินาที) | mV pH=%.0f TDS=%.0f T=%.0f%s\n", last.id,
                 fmt(v.ph, 2).c_str(), fmt(v.tds, 0).c_str(), fmt(v.temp, 1).c_str(),
-                stable ? "ค่านิ่ง" : "ค่ายังไม่นิ่ง", last.wait);
+                stable ? "ค่านิ่ง" : "ค่ายังไม่นิ่ง", last.wait, mv[0], mv[1], mv[2],
+                RAW_MODE ? " (ค่าดิบ ยังไม่คาลิเบรต)" : "");
   if (isnan(v.ph) && isnan(v.tds) && isnan(v.temp)) {
     showStatus("No sensor reading!", 5000);
   } else if (!stable) {
@@ -330,6 +339,9 @@ void stepMeasure() {
   Values v = readAll();
   live = v;
   win[winPos] = v;
+  winMv[winPos][0] = rawPhMv;
+  winMv[winPos][1] = rawTdsMv;
+  winMv[winPos][2] = rawTempMv;
   winPos = (winPos + 1) % STABLE_WINDOW;
   if (winCount < STABLE_WINDOW) winCount++;
 
@@ -340,7 +352,12 @@ void stepMeasure() {
 
   Values avg;
   bool stable = windowStable(avg);
-  if (stable || elapsed >= MEASURE_MAX_MS) finishMeasure(avg, stable, elapsed);
+  if (stable || elapsed >= MEASURE_MAX_MS) {
+    float mv[3] = {0, 0, 0};
+    for (int i = 0; i < winCount; i++)
+      for (int k = 0; k < 3; k++) mv[k] += winMv[i][k] / winCount;
+    finishMeasure(avg, mv, stable, elapsed);
+  }
 }
 
 // ================= ปุ่ม =================
@@ -375,9 +392,11 @@ String valuesJson(const Values &v) {
          ",\"temp\":" + jnum(v.temp, 1) + "}";
 }
 
-String readingJson(uint32_t id, uint32_t epoch, const Values &v, bool stable, uint8_t wait) {
+String readingJson(uint32_t id, uint32_t epoch, const Values &v, bool stable, uint8_t wait, const float *mv, bool cal) {
   return "{\"id\":" + String(id) + ",\"epoch\":" + String(epoch) + ",\"values\":" + valuesJson(v) +
-         ",\"stable\":" + String(stable ? "true" : "false") + ",\"wait\":" + String(wait) + "}";
+         ",\"stable\":" + String(stable ? "true" : "false") + ",\"wait\":" + String(wait) +
+         ",\"raw\":{\"ph_mv\":" + String(mv[0], 0) + ",\"tds_mv\":" + String(mv[1], 0) + ",\"temp_mv\":" + String(mv[2], 0) + "}" +
+         ",\"cal\":" + String(cal ? "true" : "false") + "}";
 }
 
 void sendJson(const String &j) {
@@ -393,7 +412,8 @@ void handleState() {
   j += ",\"busy\":" + String(measuring || measureRequested ? "true" : "false");
   j += ",\"busy_s\":" + String(measuring ? (millis() - measureStart) / 1000 : 0);
   j += ",\"busy_max\":" + String(MEASURE_MAX_MS / 1000);
-  j += ",\"last\":" + (last.id > 0 ? readingJson(last.id, last.epoch, last.v, last.stable, last.wait) : String("null"));
+  j += ",\"last\":" + (last.id > 0 ? readingJson(last.id, last.epoch, last.v, last.stable, last.wait, last.mv, !RAW_MODE) : String("null"));
+  j += ",\"raw_mode\":" + String(RAW_MODE ? "true" : "false");
   j += ",\"log_count\":" + String(logCount);
   j += ",\"time_set\":" + String(timeSet ? "true" : "false") + "}";
   sendJson(j);
@@ -407,8 +427,9 @@ void handleLog() {
     v.ph = e.ph100 == INT16_MIN ? NAN : e.ph100 / 100.0;
     v.tds = e.tds < 0 ? NAN : e.tds;
     v.temp = e.temp10 == INT16_MIN ? NAN : e.temp10 / 10.0;
+    float mv[3] = {(float)e.mv[0], (float)e.mv[1], (float)e.mv[2]};
     if (i) j += ",";
-    j += readingJson(e.seq, e.epoch, v, e.flags & 1, e.wait);
+    j += readingJson(e.seq, e.epoch, v, e.flags & 1, e.wait, mv, e.flags & 2);
   }
   j += "]}";
   sendJson(j);
@@ -465,11 +486,15 @@ void handleSerial() {
     float mv = s.mv * PH_DIVIDER;
     if (s.mv < PH_MIN_MV) { Serial.println("อ่านค่า pH ไม่ได้ ตรวจสายก่อน"); return; }
     float t = readTemperature();
-    phCalT = isnan(t) ? 25.0 : t;            // จำอุณหภูมิน้ำยาไว้ชดเชยภายหลัง
-    prefs.putFloat("phT", phCalT);
-    if (cmd == "cal7") { phNeutralMv = mv; prefs.putFloat("ph7", mv); }
-    else               { phAcidMv = mv;    prefs.putFloat("ph4", mv); }
-    Serial.printf("บันทึก %s = %.0f mV (น้ำยา %.1f °C)\n", cmd.c_str(), mv, phCalT);
+    float calT = isnan(t) ? 25.0 : t;        // จำอุณหภูมิน้ำยาไว้ชดเชยภายหลัง
+    prefs.putFloat("phT", calT);
+    prefs.putFloat(cmd == "cal7" ? "ph7" : "ph4", mv);
+    if (!RAW_MODE) {
+      phCalT = calT;
+      if (cmd == "cal7") phNeutralMv = mv; else phAcidMv = mv;
+    }
+    Serial.printf("บันทึก %s = %.0f mV (น้ำยา %.1f °C)%s\n", cmd.c_str(), mv, calT,
+                  RAW_MODE ? " | ตอนนี้ RAW_MODE = true ยังไม่ใช้ค่านี้ (แก้เป็น false ใน config.h)" : "");
   } else if (cmd.startsWith("tds ")) {
     float real = cmd.substring(4).toFloat();
     Sample s = readPin(PIN_TDS);
@@ -477,9 +502,10 @@ void handleSerial() {
     tdsK = 1.0;
     float measured = s.mv < TDS_MIN_MV ? 0 : tdsFromMv(s.mv, readTemperature());
     if (real > 0 && measured > 1) {
-      tdsK = real / measured;
-      prefs.putFloat("tdsK", tdsK);
-      Serial.printf("บันทึก TDS K = %.3f\n", tdsK);
+      float k = real / measured;
+      prefs.putFloat("tdsK", k);
+      tdsK = RAW_MODE ? 1.0 : k;
+      Serial.printf("บันทึก TDS K = %.3f%s\n", k, RAW_MODE ? " | ตอนนี้ RAW_MODE = true ยังไม่ใช้ค่านี้" : "");
     } else {
       tdsK = oldK;
       Serial.println("ค่าไม่ถูกต้อง (จุ่มหัววัดในน้ำยามาตรฐานก่อน)");
@@ -492,8 +518,10 @@ void handleSerial() {
     phNeutralMv = 2500; phAcidMv = 3030; phCalT = 25.0; tdsK = 1.0;
     Serial.println("ล้างค่าคาลิเบรตแล้ว (ผลตรวจที่บันทึกไว้ยังอยู่)");
   } else if (cmd == "show") {
-    Serial.printf("pH 6.86=%.0fmV pH 4.00=%.0fmV (น้ำยา %.1f °C)  tdsK=%.3f  ผลตรวจในเครื่อง=%u\n",
-                  phNeutralMv, phAcidMv, phCalT, tdsK, logCount);
+    Serial.println(RAW_MODE ? "โหมด: ค่าดิบ (ยังไม่ใช้ค่าคาลิเบรต)" : "โหมด: ใช้ค่าคาลิเบรต");
+    Serial.printf("ค่าที่บันทึกไว้: pH 6.86=%.0fmV pH 4.00=%.0fmV (น้ำยา %.1f °C)  tdsK=%.3f  ผลตรวจในเครื่อง=%u\n",
+                  prefs.getFloat("ph7", 2500), prefs.getFloat("ph4", 3030), prefs.getFloat("phT", 25),
+                  prefs.getFloat("tdsK", 1.0), logCount);
   } else {
     printHelp();
   }
@@ -509,10 +537,13 @@ void setup() {
   pinMode(PIN_BUTTON, INPUT_PULLUP);
 
   prefs.begin("wqm", false);
-  phNeutralMv = prefs.getFloat("ph7", phNeutralMv);
-  phAcidMv    = prefs.getFloat("ph4", phAcidMv);
-  phCalT      = prefs.getFloat("phT", phCalT);
-  tdsK        = prefs.getFloat("tdsK", tdsK);
+  if (!RAW_MODE) {             // โหมดค่าดิบ: ใช้สูตรมาตรฐาน ไม่โหลดค่าคาลิเบรต
+    phNeutralMv = prefs.getFloat("ph7", phNeutralMv);
+    phAcidMv    = prefs.getFloat("ph4", phAcidMv);
+    phCalT      = prefs.getFloat("phT", phCalT);
+    tdsK        = prefs.getFloat("tdsK", tdsK);
+  }
+  Serial.println(RAW_MODE ? "โหมดค่าดิบ: ยังไม่ใช้ค่าคาลิเบรต (แก้ RAW_MODE ใน config.h)" : "ใช้ค่าคาลิเบรตที่บันทึกไว้");
   logLoad();
 
   initLcd();

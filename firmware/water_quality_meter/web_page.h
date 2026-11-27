@@ -127,7 +127,14 @@ a { color: var(--accent); }
 .t-ph { --tc: var(--c-ph); }
 .t-tds { --tc: var(--c-tds); }
 .t-temp { --tc: var(--c-temp); }
+.tile .raw { font-family: var(--font-num); font-size: 11.5px; color: var(--muted); min-height: 1.2em; }
 .spark { width: 100%; height: 30px; margin-top: 2px; }
+.rawnote {
+  display: flex; flex-direction: column; gap: 2px; font-size: 13px;
+  background: var(--warn-soft); color: var(--warn); border-radius: 12px; padding: 10px 14px;
+}
+.rawnote span { color: var(--ink); opacity: .8; }
+.rawbox { font-family: var(--font-num); font-size: 13px; background: var(--paper); border-radius: 10px; padding: 8px 12px; display: flex; flex-wrap: wrap; gap: 4px 16px; }
 .spark polyline { fill: none; stroke: var(--tc); stroke-width: 2; vector-effect: non-scaling-stroke; }
 .spark polygon { fill: var(--tc); opacity: .12; }
 
@@ -319,9 +326,14 @@ textarea { width: 100%; min-height: 120px; font: 12px/1.4 var(--font-num); backg
   <!-- ===== แท็บ: วัด ===== -->
   <section class="tab" id="tab-measure" aria-label="วัด">
     <div class="live" aria-label="ค่าสดจากเซนเซอร์">
-      <div class="tile t-ph"><span>pH</span><b id="live-ph">-</b><svg class="spark" id="spark-ph" viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true"></svg></div>
-      <div class="tile t-tds"><span>TDS ppm</span><b id="live-tds">-</b><svg class="spark" id="spark-tds" viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true"></svg></div>
-      <div class="tile t-temp"><span>อุณหภูมิ °C</span><b id="live-temp">-</b><svg class="spark" id="spark-temp" viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true"></svg></div>
+      <div class="tile t-ph"><span>pH</span><b id="live-ph">-</b><small class="raw" id="raw-ph"></small><svg class="spark" id="spark-ph" viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true"></svg></div>
+      <div class="tile t-tds"><span>TDS ppm</span><b id="live-tds">-</b><small class="raw" id="raw-tds"></small><svg class="spark" id="spark-tds" viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true"></svg></div>
+      <div class="tile t-temp"><span>อุณหภูมิ °C</span><b id="live-temp">-</b><small class="raw" id="raw-temp"></small><svg class="spark" id="spark-temp" viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true"></svg></div>
+    </div>
+
+    <div class="rawnote" id="raw-note" hidden>
+      <b>โหมดค่าดิบ · ยังไม่คาลิเบรต</b>
+      <span>ค่า pH และ TDS คำนวณจากสูตรมาตรฐานของเซนเซอร์ อาจคลาดเคลื่อนจากค่าจริง ตัวเลขเล็กใต้ค่าคือแรงดันดิบ (mV) ที่อ่านได้จริง ระบบบันทึกไว้ทุกครั้งเพื่อใช้คาลิเบรตภายหลัง</span>
     </div>
 
     <div class="panel measure-card">
@@ -695,7 +707,7 @@ function renderReport(rec) {
   <article class="slip" aria-live="polite">
     <div class="slip-head">
       <div class="meta">
-        <span class="eyebrow">ใบรายงานผล${rec.example ? ` <span class="tag">ตัวอย่าง</span>` : ""}</span>
+        <span class="eyebrow">ใบรายงานผล${rec.example ? ` <span class="tag">ตัวอย่าง</span>` : ""}${rec.cal === false ? ` <span class="tag">ค่าดิบ · ยังไม่คาลิเบรต</span>` : ""}</span>
         <span>🕒 ${esc(fmtTime(rec.time))}${esc(timeNote(rec))}</span>
         <span>📍 ${rec.location ? esc(rec.location) : "ไม่ได้ระบุสถานที่"}${rec.gps ? ` · <a href="https://maps.google.com/?q=${rec.gps.lat},${rec.gps.lon}" target="_blank" rel="noopener">${rec.gps.lat.toFixed(5)}, ${rec.gps.lon.toFixed(5)}</a>` : ""}</span>
         ${rec.stable === true ? `<span>✅ ค่านิ่งใน ${rec.wait} วินาที แล้วเฉลี่ย 6 ค่าล่าสุด</span>` : ""}
@@ -730,6 +742,7 @@ function renderReport(rec) {
         <div class="val">${f(v.temp, 1)} <small>°C</small></div>
         <div class="desc">${esc(a.temp.desc)}</div>
       </div>
+      ${rec.raw ? `<div><div class="hint">แรงดันดิบที่อ่านได้ (เฉลี่ยตอนค่านิ่ง)</div><div class="rawbox"><span>pH (Po) ${Math.round(rec.raw.ph_mv)} mV</span><span>TDS (A) ${Math.round(rec.raw.tds_mv)} mV</span><span>NTC ${Math.round(rec.raw.temp_mv)} mV</span></div></div>` : ""}
     </section>
 
     <section>
@@ -787,10 +800,14 @@ function drawSpark(k) {
   const line = pts.map(p => p[0].toFixed(1) + "," + p[1].toFixed(1)).join(" ");
   el.innerHTML = `<polygon points="${line} ${pts[pts.length - 1][0].toFixed(1)},30 ${pts[0][0].toFixed(1)},30"/><polyline points="${line}"/>`;
 }
-function setLive(v) {
+function setLive(v, raw) {
   $("live-ph").textContent = f(v.ph, 2);
   $("live-tds").textContent = fTds(v.tds);
   $("live-temp").textContent = f(v.temp, 1);
+  const mv = x => (raw && has(x) ? Math.round(x) + " mV" : "");
+  $("raw-ph").textContent = mv(raw && raw.ph_mv);
+  $("raw-tds").textContent = mv(raw && raw.tds_mv);
+  $("raw-temp").textContent = mv(raw && raw.temp_mv);
   ["ph", "tds", "temp"].forEach(k => {
     liveBuf[k].push(has(v[k]) ? v[k] : null);
     if (liveBuf[k].length > 60) liveBuf[k].shift();
@@ -839,12 +856,14 @@ function addRecord(rec) {
 }
 
 function toCsv() {
-  const rows = [["time_iso", "location", "lat", "lon", "ph", "tds", "temp", "stable", "source_guess", "source_true"]];
+  const rows = [["time_iso", "location", "lat", "lon", "ph", "tds", "temp", "stable", "calibrated", "raw_ph_mv", "raw_tds_mv", "raw_temp_mv", "source_guess", "source_true"]];
   byTime().forEach(h => {
     const a = analyze(h.values);
     rows.push([h.timeSource === "unknown" ? "" : new Date(h.time).toISOString(), h.location || "", h.gps ? h.gps.lat : "", h.gps ? h.gps.lon : "",
       has(h.values.ph) ? h.values.ph : "", has(h.values.tds) ? h.values.tds : "", has(h.values.temp) ? h.values.temp : "",
-      h.stable === false ? "no" : "yes", a.source ? a.source[0].id : "", h.truth || ""]);
+      h.stable === false ? "no" : "yes", h.cal === false ? "no" : "yes",
+      h.raw ? Math.round(h.raw.ph_mv) : "", h.raw ? Math.round(h.raw.tds_mv) : "", h.raw ? Math.round(h.raw.temp_mv) : "",
+      a.source ? a.source[0].id : "", h.truth || ""]);
   });
   return rows.map(r => r.map(c => /[",\n]/.test(String(c)) ? `"${String(c).replace(/"/g, '""')}"` : c).join(",")).join("\n");
 }
@@ -1018,7 +1037,8 @@ function recordFromDevice(it, live) {
     key: "dev-" + it.id, label: "#" + it.id,
     time: known ? it.epoch * 1000 : Date.now(),
     timeSource: known ? "device" : (live ? "phone" : "unknown"),
-    stable: it.stable, wait: it.wait
+    stable: it.stable, wait: it.wait,
+    raw: it.raw || null, cal: it.cal !== false
   });
   if (!live) { rec.location = ""; rec.gps = null; }   // วัดตอนมือถือไม่ได้ดูอยู่ ไม่รู้สถานที่
   return rec;
@@ -1028,7 +1048,8 @@ async function poll() {
   try {
     const s = await getJson(apiBase + "/api/state");
     setConn("on", "เชื่อมต่อเครื่องวัดแล้ว");
-    setLive(s.live);
+    setLive(s.live, s.raw);
+    $("raw-note").hidden = !s.raw_mode;
     setBusy(s.busy, s.busy_s || 0, s.busy_max || 30);
     if (s.busy) sawBusy = true;
     if (!s.time_set) fetch(apiBase + "/api/time?epoch=" + Math.floor(Date.now() / 1000), { method: "POST" }).catch(() => {});

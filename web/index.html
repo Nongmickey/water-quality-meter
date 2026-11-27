@@ -24,9 +24,14 @@
   <!-- ===== แท็บ: วัด ===== -->
   <section class="tab" id="tab-measure" aria-label="วัด">
     <div class="live" aria-label="ค่าสดจากเซนเซอร์">
-      <div class="tile t-ph"><span>pH</span><b id="live-ph">-</b><svg class="spark" id="spark-ph" viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true"></svg></div>
-      <div class="tile t-tds"><span>TDS ppm</span><b id="live-tds">-</b><svg class="spark" id="spark-tds" viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true"></svg></div>
-      <div class="tile t-temp"><span>อุณหภูมิ °C</span><b id="live-temp">-</b><svg class="spark" id="spark-temp" viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true"></svg></div>
+      <div class="tile t-ph"><span>pH</span><b id="live-ph">-</b><small class="raw" id="raw-ph"></small><svg class="spark" id="spark-ph" viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true"></svg></div>
+      <div class="tile t-tds"><span>TDS ppm</span><b id="live-tds">-</b><small class="raw" id="raw-tds"></small><svg class="spark" id="spark-tds" viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true"></svg></div>
+      <div class="tile t-temp"><span>อุณหภูมิ °C</span><b id="live-temp">-</b><small class="raw" id="raw-temp"></small><svg class="spark" id="spark-temp" viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true"></svg></div>
+    </div>
+
+    <div class="rawnote" id="raw-note" hidden>
+      <b>โหมดค่าดิบ · ยังไม่คาลิเบรต</b>
+      <span>ค่า pH และ TDS คำนวณจากสูตรมาตรฐานของเซนเซอร์ อาจคลาดเคลื่อนจากค่าจริง ตัวเลขเล็กใต้ค่าคือแรงดันดิบ (mV) ที่อ่านได้จริง ระบบบันทึกไว้ทุกครั้งเพื่อใช้คาลิเบรตภายหลัง</span>
     </div>
 
     <div class="panel measure-card">
