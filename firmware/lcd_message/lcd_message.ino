@@ -3,8 +3,8 @@
  * แก้ข้อความได้ที่ LINE1 - LINE4 (บรรทัดละไม่เกิน 20 ตัว ใช้ได้เฉพาะภาษาอังกฤษ ตัวเลข และสัญลักษณ์)
  *
  * ต่อสาย
- *   LCD SDA -> S ของ D21
- *   LCD SCL -> S ของ D22
+ *   LCD SDA -> S ของ D18   (เปลี่ยนช่องได้ที่ PIN_SDA / PIN_SCL ห้ามใช้ D34 D35 D36 D39 เพราะเป็นขารับเข้าอย่างเดียว)
+ *   LCD SCL -> S ของ D19
  *   LCD VCC -> VIN (5V)   ต้องเป็น 5V ถ้าใช้ 3V3 ตัวหนังสือจะจางจนมองไม่เห็น
  *   LCD GND -> G
  *
@@ -15,6 +15,9 @@
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
 
+const int PIN_SDA = 18;   // ขา SDA ของจอ
+const int PIN_SCL = 19;   // ขา SCL ของจอ
+
 const char *LINE1 = "Smart Water System";
 const char *LINE2 = "Water Quality Meter";
 const char *LINE3 = "pH / TDS / Temp";
@@ -24,7 +27,7 @@ LiquidCrystal_I2C *lcd = nullptr;
 
 void setup() {
   Serial.begin(115200);
-  Wire.begin(21, 22);
+  Wire.begin(PIN_SDA, PIN_SCL);
 
   // หาจอ: address ที่จอ LCD ใช้บ่อย
   const uint8_t addrs[] = {0x27, 0x3F, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26,
@@ -38,7 +41,7 @@ void setup() {
     }
   }
   if (!lcd) {
-    Serial.println("ไม่เจอจอ: เช็ก SDA -> D21, SCL -> D22, VCC -> VIN, GND -> G");
+    Serial.printf("ไม่เจอจอ: เช็ก SDA -> D%d, SCL -> D%d, VCC -> VIN, GND -> G\n", PIN_SDA, PIN_SCL);
     return;
   }
 
