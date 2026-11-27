@@ -7,7 +7,7 @@ import math
 from pathlib import Path
 
 OUT = Path(__file__).resolve().parent.parent / "docs" / "wiring-breadboard.svg"
-W, H = 1200, 1130
+W, H = 1200, 1160
 INK, MUTED = "#102a32", "#587480"
 RED, BLACK, ORANGE, GREEN, BLUE, PURPLE, PINK = "#d64545", "#2b2b2b", "#e08a1e", "#1d8a4a", "#2b6fd6", "#8e44ad", "#c2185b"
 
@@ -121,14 +121,35 @@ text(782, 59, "GND", 12, BLUE, "start", True)
 
 # ---------- ESP32 ----------
 A('<rect x="30" y="60" width="200" height="600" rx="12" fill="#1d2f3a"/>')
-text(130, 640, "บอร์ดขยาย ESP32", 15, "#ffffff", "middle", True)
+text(130, 614, "บอร์ดขยาย ESP32", 15, "#ffffff", "middle", True)
 epins = [("VIN (5V)", 84), ("3V3", 108), ("G", 144), ("S ของ D34", 216), ("S ของ D35", 384), ("S ของ D32", 576)]
 for lab, y in epins:
     A(f'<rect x="223" y="{y-7}" width="14" height="14" fill="#d9c27a" stroke="#8a7330"/>')
     text(212, y + 5, lab, 14, "#ffffff", "end")
-text(130, 470, "จอ LCD และปุ่มเขียว", 12, "#9fc3cc", "middle")
-text(130, 488, "ต่อตรงที่บอร์ดขยาย", 12, "#9fc3cc", "middle")
-text(130, 506, "เหมือนเดิม", 12, "#9fc3cc", "middle")
+# ขาด้านล่างของบอร์ดขยาย: จอ LCD และปุ่มเขียว (ต่อตรง ไม่ผ่านเบรดบอร์ด)
+bpins = [("D21", 52), ("D22", 84), ("VIN", 116), ("G", 148), ("D15", 188), ("G", 220)]
+for lab, x in bpins:
+    A(f'<rect x="{x-7}" y="653" width="14" height="14" fill="#d9c27a" stroke="#8a7330"/>')
+    text(x, 640, lab, 11, "#ffffff", "middle", True)
+
+# จอ LCD
+A('<rect x="30" y="740" width="146" height="110" rx="8" fill="#eef4f5" stroke="#0b7480" stroke-width="2"/>')
+for lab, x, col in [("SDA", 52, BLUE), ("SCL", 84, PURPLE), ("VCC", 116, RED), ("GND", 148, BLACK)]:
+    A(f'<line x1="{x}" y1="667" x2="{x}" y2="733" stroke="{col}" stroke-width="4"/>')
+    A(f'<rect x="{x-7}" y="733" width="14" height="14" fill="#d9c27a" stroke="#8a7330"/>')
+    text(x, 764, lab, 10.5, INK, "middle", True)
+text(103, 800, "จอ LCD 20×4", 14, INK, "middle", True)
+text(103, 820, "(I2C)", 12, MUTED, "middle")
+
+# ปุ่มเขียว
+A('<polyline points="188,667 188,760 194,770" fill="none" stroke="#1d8a4a" stroke-width="4"/>')
+A('<polyline points="220,667 220,760 214,770" fill="none" stroke="#2b2b2b" stroke-width="4"/>')
+A('<circle cx="204" cy="790" r="24" fill="#2e9e5b" stroke="#1d6b3c" stroke-width="3"/>')
+A('<circle cx="204" cy="790" r="14" fill="#3cbf72"/>')
+text(204, 836, "ปุ่มเขียว", 13, INK, "middle", True)
+text(204, 854, "= เริ่มวัด", 13, GREEN, "middle", True)
+text(230, 700, "ขั้ว NO", 11, MUTED, "start")
+text(230, 714, "ทั้ง 2 ขั้ว", 11, MUTED, "start")
 
 # ---------- โมดูล ----------
 A('<rect x="860" y="140" width="300" height="104" rx="8" fill="#eef4f5" stroke="#0b7480" stroke-width="2"/>')
@@ -254,6 +275,7 @@ for r in (6, 13):
 # ---------- คำอธิบาย ----------
 y = 905
 notes = [
+    ("จอ LCD: SDA→D21, SCL→D22, VCC→VIN (5V), GND→G · ปุ่มเขียว (กด = เริ่มวัด): ขั้ว NO ขั้วหนึ่ง→D15, อีกขั้ว→G · ต่อตรงที่บอร์ดขยาย ไม่ผ่านเบรดบอร์ด", True),
     ("ราง + ซ้าย = 3V3 · ราง − ซ้าย = GND · ราง + ขวา = 5V (VIN) · ราง − ขวา = GND   (แต่ละแถว a–e ต่อถึงกัน, f–j ต่อถึงกัน, ร่องกลางไม่ต่อ)", True),
     ("① TDS แถว 6: A→j6 · 4.7k คร่อมร่อง e6–f6 · 104: a6→ราง− · 10µF: ขา+ b6, ขา− ราง− · c6→D34 · บอร์ด TDS + → ราง+ขวา (5V), − → ราง−ขวา", False),
     ("② pH แถว 13: Po→j13 · 4.7k คร่อมร่อง e13–f13 · 4.7k อีกตัว a13→ราง− · 104: b13→ราง− · 10µF: ขา+ c13, ขา− ราง− · d13→D35 · V+→ราง+ขวา, G→ราง−ขวา", False),
