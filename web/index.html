@@ -3,86 +3,136 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>แล็บตรวจคุณภาพน้ำ</title>
+<meta name="theme-color" content="#0b7480">
+<title>Smart Water</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div class="wrap">
-  <header>
+<header class="appbar">
+  <div class="brand">
+    <svg class="logo" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5c3.6 4.3 6.5 8 6.5 11.4A6.5 6.5 0 0 1 5.5 13.9C5.5 10.5 8.4 6.8 12 2.5z" fill="currentColor"/><path d="M9 14.5a3 3 0 0 0 3 3" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></svg>
     <div>
-      <div class="eyebrow">เครื่องวัดคุณภาพน้ำ · ESP32</div>
-      <h1>ผลตรวจคุณภาพน้ำ</h1>
+      <div class="eyebrow">Smart Water System</div>
+      <h1>ตรวจคุณภาพน้ำ</h1>
     </div>
-    <div class="conn"><span class="dot" id="conn-dot"></span><span id="conn-text">กำลังเชื่อมต่อ…</span></div>
-  </header>
-
-  <div class="live" aria-label="ค่าสดจากเซนเซอร์">
-    <div><span>pH</span><b id="live-ph">-</b></div>
-    <div><span>TDS (ppm)</span><b id="live-tds">-</b></div>
-    <div><span>อุณหภูมิ (°C)</span><b id="live-temp">-</b></div>
   </div>
+  <div class="conn"><span class="dot" id="conn-dot"></span><span id="conn-text">กำลังเชื่อมต่อ…</span></div>
+</header>
 
-  <div class="panel" id="demo-panel" hidden>
-    <div>
-      <h2>โหมดทดลอง</h2>
-      <p class="hint" style="margin:0">หน้านี้ไม่ได้เปิดจาก WiFi ของเครื่องวัด ใส่ค่าเองเพื่อลองระบบวิเคราะห์ได้ ค่าที่ไม่ได้วัดให้ติ๊ก “ไม่ได้วัด”</p>
+<main class="wrap">
+  <!-- ===== แท็บ: วัด ===== -->
+  <section class="tab" id="tab-measure" aria-label="วัด">
+    <div class="live" aria-label="ค่าสดจากเซนเซอร์">
+      <div class="tile t-ph"><span>pH</span><b id="live-ph">-</b><svg class="spark" id="spark-ph" viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true"></svg></div>
+      <div class="tile t-tds"><span>TDS ppm</span><b id="live-tds">-</b><svg class="spark" id="spark-tds" viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true"></svg></div>
+      <div class="tile t-temp"><span>อุณหภูมิ °C</span><b id="live-temp">-</b><svg class="spark" id="spark-temp" viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true"></svg></div>
     </div>
-    <div class="row">
-      <div class="field"><label for="d-ph">pH</label><input id="d-ph" type="number" step="0.01" min="0" max="14" value="7.62"><span class="check"><input type="checkbox" id="d-ph-off">ไม่ได้วัด</span></div>
-      <div class="field"><label for="d-tds">TDS (ppm)</label><input id="d-tds" type="number" step="1" min="0" max="2000" value="184"><span class="check"><input type="checkbox" id="d-tds-off">ไม่ได้วัด</span></div>
-      <div class="field"><label for="d-temp">อุณหภูมิ (°C)</label><input id="d-temp" type="number" step="0.1" min="0" max="60" value="29.4"><span class="check"><input type="checkbox" id="d-temp-off">ไม่ได้วัด</span></div>
-    </div>
-    <div class="row"><button class="primary" id="d-send">กดปุ่มเขียว (จำลอง)</button></div>
-    <div id="dev-row" class="dev-row">
-      <label for="dev-addr" class="eyebrow">ต่อกับเครื่องวัดจริง</label>
+
+    <div class="panel measure-card">
       <div class="row">
-        <input id="dev-addr" type="text" inputmode="url" autocomplete="off" aria-describedby="dev-msg">
-        <button id="dev-connect">เชื่อมต่อ</button>
+        <input type="text" id="loc" placeholder="สถานที่เก็บตัวอย่าง เช่น บ่อหลังโรงเรียน" autocomplete="off" aria-label="สถานที่เก็บตัวอย่าง">
+        <button id="gps" hidden>ใช้ GPS</button>
       </div>
-      <span class="hint" id="dev-msg">ต่อคอมหรือมือถือเข้า WiFi “WaterMeter” ก่อน แล้วกดเชื่อมต่อ</span>
+      <div class="hint" id="loc-hint">ชื่อสถานที่จะถูกบันทึกไปกับผลตรวจครั้งต่อไป</div>
+      <button class="measure-btn" id="measure-btn"><span class="mb-dot" aria-hidden="true"></span><span id="measure-label">เริ่มวัด</span></button>
+      <div class="busy" id="busy" hidden>
+        <div class="spinner" aria-hidden="true"></div>
+        <div class="busy-txt"><b>กำลังวัด · รอให้ค่านิ่ง</b><span class="hint" id="busy-text">0 วินาที</span></div>
+        <div class="busy-bar"><span id="busy-fill"></span></div>
+      </div>
+      <p class="hint center" style="margin:0">หรือกดปุ่มสีเขียวที่ตัวเครื่อง · จุ่มหัววัดทีละตัว อย่าจุ่ม pH กับ TDS ในแก้วเดียวกันพร้อมกัน</p>
     </div>
-  </div>
 
-  <div class="panel">
-    <div class="row">
-      <label for="loc" class="field" style="flex:0 0 auto"><span class="eyebrow">สถานที่เก็บตัวอย่าง</span></label>
-    </div>
-    <div class="row">
-      <input type="text" id="loc" placeholder="เช่น บ่อหลังโรงเรียน อ.บ้านโป่ง" autocomplete="off">
-      <button id="gps" hidden>ใช้ GPS</button>
-    </div>
-    <div class="hint" id="loc-hint">ชื่อสถานที่จะถูกบันทึกไปกับผลตรวจครั้งต่อไป</div>
-  </div>
-
-  <div id="report"></div>
-
-  <div class="panel">
-    <div class="row" style="justify-content:space-between">
-      <h2>ประวัติการตรวจ</h2>
+    <div class="panel" id="demo-panel" hidden>
+      <div>
+        <h2>โหมดทดลอง</h2>
+        <p class="hint" style="margin:0">หน้านี้ยังไม่ได้ต่อกับเครื่องวัด ใส่ค่าเองเพื่อลองระบบวิเคราะห์ได้ ค่าที่ไม่ได้วัดให้ติ๊ก “ไม่ได้วัด”</p>
+      </div>
       <div class="row">
-        <button id="export">ส่งออก CSV</button>
-        <button id="clear-hist">ล้างประวัติ</button>
+        <div class="field"><label for="d-ph">pH</label><input id="d-ph" type="number" step="0.01" min="0" max="14" value="7.62"><span class="check"><input type="checkbox" id="d-ph-off">ไม่ได้วัด</span></div>
+        <div class="field"><label for="d-tds">TDS (ppm)</label><input id="d-tds" type="number" step="1" min="0" max="2000" value="184"><span class="check"><input type="checkbox" id="d-tds-off">ไม่ได้วัด</span></div>
+        <div class="field"><label for="d-temp">อุณหภูมิ (°C)</label><input id="d-temp" type="number" step="0.1" min="0" max="60" value="29.4"><span class="check"><input type="checkbox" id="d-temp-off">ไม่ได้วัด</span></div>
+      </div>
+      <div id="dev-row" class="dev-row">
+        <label for="dev-addr" class="eyebrow">ต่อกับเครื่องวัดจริง</label>
+        <div class="row">
+          <input id="dev-addr" type="text" inputmode="url" autocomplete="off" aria-describedby="dev-msg">
+          <button id="dev-connect">เชื่อมต่อ</button>
+        </div>
+        <span class="hint" id="dev-msg">ต่อมือถือเข้า WiFi “WaterMeter” ก่อน แล้วกดเชื่อมต่อ</span>
       </div>
     </div>
-    <p class="hint" style="margin:0">เลือก “แหล่งน้ำจริง” เมื่อรู้ว่าน้ำมาจากไหน แล้วส่งออก CSV ไปเทรนโมเดลใหม่ (ดู model/train.py) ยิ่งมีข้อมูลจริงมาก โมเดลยิ่งแม่นขึ้น</p>
-    <div class="row" id="clear-confirm" hidden>
-      <span>ลบประวัติทั้งหมดในมือถือนี้?</span>
-      <button id="clear-yes" class="primary">ลบเลย</button>
-      <button id="clear-no">ยกเลิก</button>
-    </div>
-    <div class="hist-scroll"><table>
-      <thead><tr><th>วันเวลา</th><th>สถานที่</th><th>pH</th><th>TDS</th><th>°C</th><th>ผล</th><th>คาดว่าเป็น</th><th>แหล่งน้ำจริง</th></tr></thead>
-      <tbody id="hist-body"></tbody>
-    </table></div>
-    <div id="csv-box" hidden>
-      <textarea id="csv-text" readonly></textarea>
-      <div class="row"><span class="hint" id="csv-msg"></span><a id="csv-dl" hidden download="water-samples.csv">ดาวน์โหลดไฟล์</a></div>
-    </div>
-  </div>
 
-  <p class="fine" id="model-info"></p>
-</div>
+    <div id="report"></div>
+  </section>
+
+  <!-- ===== แท็บ: กราฟ ===== -->
+  <section class="tab" id="tab-charts" aria-label="กราฟ" hidden>
+    <div class="panel">
+      <div class="row between">
+        <h2>แนวโน้มคุณภาพน้ำ</h2>
+        <div class="row">
+          <select id="chart-loc" aria-label="เลือกสถานที่"><option value="">ทุกสถานที่</option></select>
+          <select id="chart-range" aria-label="จำนวนผลตรวจ">
+            <option value="10">10 ครั้งล่าสุด</option>
+            <option value="30" selected>30 ครั้งล่าสุด</option>
+            <option value="0">ทั้งหมด</option>
+          </select>
+        </div>
+      </div>
+      <div class="stats" id="stats"></div>
+    </div>
+    <div class="panel chart-card"><div class="row between"><h3>pH ความเป็นกรด-ด่าง</h3><span class="legend"><i class="band"></i>เกณฑ์น้ำดื่ม 6.5–8.5</span></div><div id="chart-ph"></div></div>
+    <div class="panel chart-card"><div class="row between"><h3>TDS สารที่ละลายในน้ำ (ppm)</h3><span class="legend"><i class="band"></i>ไม่เกิน 500</span></div><div id="chart-tds"></div></div>
+    <div class="panel chart-card"><div class="row between"><h3>อุณหภูมิน้ำ (°C)</h3><span class="legend"><i class="band"></i>ปกติ 25–32</span></div><div id="chart-temp"></div></div>
+    <div class="panel"><h3>AI คาดว่าน้ำมาจาก (นับจากผลตรวจในช่วงนี้)</h3><div id="chart-src"></div></div>
+  </section>
+
+  <!-- ===== แท็บ: ประวัติ ===== -->
+  <section class="tab" id="tab-history" aria-label="ประวัติ" hidden>
+    <div class="panel">
+      <div class="row between">
+        <h2>ประวัติการตรวจ</h2>
+        <div class="row">
+          <button id="export">ส่งออก CSV</button>
+          <button id="clear-hist">ล้างประวัติ</button>
+        </div>
+      </div>
+      <div class="row" id="clear-confirm" hidden>
+        <span>ลบประวัติทั้งหมดในมือถือนี้?</span>
+        <button id="clear-yes" class="danger">ลบเลย</button>
+        <button id="clear-no">ยกเลิก</button>
+      </div>
+      <div class="dev-sync" id="dev-sync" hidden>
+        <div><b>ข้อมูลที่บันทึกในเครื่องวัด</b><div class="hint" id="sync-msg">-</div></div>
+        <div class="row">
+          <button id="sync-dev">ดึงข้อมูลจากเครื่อง</button>
+          <button id="clear-dev">ล้างข้อมูลในเครื่อง</button>
+        </div>
+      </div>
+      <p class="hint" style="margin:0">แตะแถวเพื่อดูใบรายงานผล · เลือก “แหล่งน้ำจริง” เมื่อรู้ว่าน้ำมาจากไหน แล้วส่งออก CSV ไปเทรนโมเดลใหม่ (model/train.py) ยิ่งมีข้อมูลจริงมาก AI ยิ่งแม่นขึ้น</p>
+      <div class="hist-scroll"><table>
+        <thead><tr><th>วันเวลา</th><th>สถานที่</th><th>pH</th><th>TDS</th><th>°C</th><th>คะแนน</th><th>AI คาดว่าเป็น</th><th>แหล่งน้ำจริง</th></tr></thead>
+        <tbody id="hist-body"></tbody>
+      </table></div>
+      <div id="csv-box" hidden>
+        <textarea id="csv-text" readonly></textarea>
+        <div class="row"><span class="hint" id="csv-msg"></span><a id="csv-dl" hidden download="water-samples.csv">ดาวน์โหลดไฟล์</a></div>
+      </div>
+    </div>
+    <p class="fine" id="model-info"></p>
+  </section>
+</main>
+
+<nav class="tabbar" role="tablist" aria-label="เมนู">
+  <button role="tab" data-go="measure" aria-selected="true">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c3 3.6 5.5 6.7 5.5 9.6A5.5 5.5 0 0 1 6.5 12.6C6.5 9.7 9 6.6 12 3z"/></svg>วัด</button>
+  <button role="tab" data-go="charts" aria-selected="false">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19h16M6 15l4-5 3 3 5-7"/></svg>กราฟ</button>
+  <button role="tab" data-go="history" aria-selected="false">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14v14H5zM8 9h8M8 12h8M8 15h5"/></svg>ประวัติ</button>
+</nav>
 
 <script src="model.js"></script>
 <script src="app.js"></script>

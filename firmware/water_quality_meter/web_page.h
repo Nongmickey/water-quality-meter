@@ -7,19 +7,21 @@ const char INDEX_HTML[] PROGMEM = R"WQMHTML(<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>แล็บตรวจคุณภาพน้ำ</title>
+<meta name="theme-color" content="#0b7480">
+<title>Smart Water</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
-/* Layout: a lab test slip — live strip on top, one report card per button press, records ledger below. Single column, phone first. */
+/* Smart Water — mobile first: app bar, live tiles, big measure button, report slip, charts, history. Bottom tab bar. */
 :root {
-  --paper: #eef4f5;
+  --paper: #eef4f6;
   --panel: #ffffff;
-  --ink: #102a32;
-  --muted: #587480;
-  --line: #d3e1e5;
+  --ink: #0f2a33;
+  --muted: #5b7581;
+  --line: #d6e3e8;
   --accent: #0b7480;
+  --accent-2: #12a4a0;
   --accent-ink: #ffffff;
-  --accent-soft: #d9eef0;
+  --accent-soft: #d8eff1;
   --good: #1d7f48;
   --good-soft: #dcf1e4;
   --warn: #9a6512;
@@ -28,72 +30,114 @@ const char INDEX_HTML[] PROGMEM = R"WQMHTML(<!doctype html>
   --bad-soft: #f8dfdb;
   --none: #7d8f95;
   --none-soft: #e6eced;
+  --c-ph: #6d4bd8;
+  --c-tds: #0c8fb0;
+  --c-temp: #e0683a;
+  --shadow: 0 1px 2px rgba(15, 42, 51, .06), 0 6px 18px rgba(15, 42, 51, .07);
+  --radius: 16px;
   --font-ui: system-ui, -apple-system, "Segoe UI", "Noto Sans Thai", "Leelawadee UI", Tahoma, sans-serif;
   --font-num: ui-monospace, "SF Mono", Menlo, Consolas, "Roboto Mono", monospace;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --paper: #0a171b; --panel: #102329; --ink: #e1eef1; --muted: #8ba7b0; --line: #203a42;
-    --accent: #47bfc9; --accent-ink: #062126; --accent-soft: #123a40;
+    --paper: #08161a; --panel: #0f2329; --ink: #e2eff2; --muted: #8ea9b2; --line: #1f3a42;
+    --accent: #3cc2c9; --accent-2: #2aa58f; --accent-ink: #04201f; --accent-soft: #123a40;
     --good: #5cc98d; --good-soft: #113626; --warn: #e2ad55; --warn-soft: #3a2c12;
     --bad: #f07a6c; --bad-soft: #3f1d19; --none: #8a9da3; --none-soft: #1b2e33;
+    --c-ph: #a48cff; --c-tds: #4cc3e0; --c-temp: #ff9a6b;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 6px 18px rgba(0, 0, 0, .25);
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --paper: #0a171b; --panel: #102329; --ink: #e1eef1; --muted: #8ba7b0; --line: #203a42;
-  --accent: #47bfc9; --accent-ink: #062126; --accent-soft: #123a40;
+  --paper: #08161a; --panel: #0f2329; --ink: #e2eff2; --muted: #8ea9b2; --line: #1f3a42;
+  --accent: #3cc2c9; --accent-2: #2aa58f; --accent-ink: #04201f; --accent-soft: #123a40;
   --good: #5cc98d; --good-soft: #113626; --warn: #e2ad55; --warn-soft: #3a2c12;
   --bad: #f07a6c; --bad-soft: #3f1d19; --none: #8a9da3; --none-soft: #1b2e33;
+  --c-ph: #a48cff; --c-tds: #4cc3e0; --c-temp: #ff9a6b;
+  --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 6px 18px rgba(0, 0, 0, .25);
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; }
 body {
   margin: 0;
   background: var(--paper);
   color: var(--ink);
   font: 15px/1.6 var(--font-ui);
-  padding-left: max(16px, env(safe-area-inset-left, 0px));
-  padding-right: max(16px, env(safe-area-inset-right, 0px));
-  padding-block: 16px 40px;
+  padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px));
 }
-.wrap { max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+.wrap {
+  max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px;
+  padding: 14px max(16px, env(safe-area-inset-left, 0px)) 24px max(16px, env(safe-area-inset-right, 0px));
+}
+.tab { display: flex; flex-direction: column; gap: 14px; }
 h1, h2, h3 { margin: 0; line-height: 1.3; text-wrap: balance; }
-h1 { font-size: 22px; font-weight: 700; }
+h1 { font-size: 20px; font-weight: 700; }
 h2 { font-size: 17px; font-weight: 700; }
-.eyebrow { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+h3 { font-size: 15px; font-weight: 700; }
+.eyebrow { font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 .muted { color: var(--muted); }
 .num { font-family: var(--font-num); font-variant-numeric: tabular-nums; }
+.center { text-align: center; }
 button, select, input { font: inherit; color: inherit; }
 button {
-  border: 1px solid var(--line); background: var(--panel); border-radius: 8px;
-  padding: 8px 14px; cursor: pointer;
+  border: 1px solid var(--line); background: var(--panel); border-radius: 10px;
+  padding: 8px 14px; cursor: pointer; min-height: 40px;
 }
+button:disabled { opacity: .55; cursor: default; }
 button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+button.danger { background: var(--bad); color: #fff; border-color: var(--bad); font-weight: 600; }
 button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 input, select {
-  background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; min-width: 0;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; min-width: 0; min-height: 40px;
 }
+a { color: var(--accent); }
 
-/* header + live strip */
-header { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 8px; }
-.conn { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
-.dot { width: 9px; height: 9px; border-radius: 50%; background: var(--none); }
-.dot.on { background: var(--good); }
-.dot.off { background: var(--bad); }
-.dot.demo { background: var(--warn); }
-.live {
-  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px;
-  background: var(--line); border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+/* ===== app bar ===== */
+.appbar {
+  position: sticky; top: 0; z-index: 10;
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px;
+  padding: calc(10px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) 10px max(16px, env(safe-area-inset-left, 0px));
+  background: linear-gradient(120deg, #0b5f6a, #0b7480 45%, #12a4a0);
+  color: #fff;
+  box-shadow: 0 2px 12px rgba(11, 95, 106, .25);
 }
-.live div { background: var(--panel); padding: 8px 12px; }
-.live b { display: block; font-family: var(--font-num); font-size: 20px; font-variant-numeric: tabular-nums; }
-.live span { font-size: 12px; color: var(--muted); }
+.appbar .eyebrow { color: rgba(255, 255, 255, .75); }
+.brand { display: flex; align-items: center; gap: 10px; }
+.logo { width: 34px; height: 34px; color: #fff; background: rgba(255, 255, 255, .16); border-radius: 10px; padding: 5px; }
+.conn {
+  display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px;
+  background: rgba(255, 255, 255, .16); padding: 4px 10px; border-radius: 99px;
+}
+.dot { width: 9px; height: 9px; border-radius: 50%; background: #c9d6da; flex: none; }
+.dot.on { background: #6be3a0; box-shadow: 0 0 0 3px rgba(107, 227, 160, .25); }
+.dot.off { background: #ff8a7a; }
+.dot.demo { background: #ffd27a; }
 
-/* panels */
-.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+/* ===== live tiles ===== */
+.live { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.tile {
+  background: var(--panel); border-radius: var(--radius); padding: 10px 12px 6px; box-shadow: var(--shadow);
+  border-top: 4px solid var(--tc); display: flex; flex-direction: column; min-width: 0;
+}
+.tile span { font-size: 12px; color: var(--muted); white-space: nowrap; }
+.tile b { font-family: var(--font-num); font-size: 24px; font-variant-numeric: tabular-nums; line-height: 1.2; color: var(--tc); }
+.t-ph { --tc: var(--c-ph); }
+.t-tds { --tc: var(--c-tds); }
+.t-temp { --tc: var(--c-temp); }
+.spark { width: 100%; height: 30px; margin-top: 2px; }
+.spark polyline { fill: none; stroke: var(--tc); stroke-width: 2; vector-effect: non-scaling-stroke; }
+.spark polygon { fill: var(--tc); opacity: .12; }
+
+/* ===== panels ===== */
+.panel {
+  background: var(--panel); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow);
+  display: flex; flex-direction: column; gap: 12px;
+}
 .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.row.between { justify-content: space-between; }
 .row > input[type="text"] { flex: 1 1 200px; }
 .field { display: flex; flex-direction: column; gap: 4px; flex: 1 1 120px; min-width: 0; }
 .field label { font-size: 13px; color: var(--muted); }
@@ -102,8 +146,36 @@ header { display: flex; flex-wrap: wrap; align-items: end; justify-content: spac
 .dev-row { display: flex; flex-direction: column; gap: 6px; padding-top: 12px; border-top: 1px dashed var(--line); }
 .dev-row input { flex: 1 1 180px; }
 
-/* report slip */
-.slip { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+/* ===== measure button ===== */
+.measure-btn {
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+  width: 100%; min-height: 64px; border: 0; border-radius: 99px;
+  background: linear-gradient(135deg, #1fae5f, #12935a);
+  color: #fff; font-size: 20px; font-weight: 700; letter-spacing: .02em;
+  box-shadow: 0 8px 20px rgba(18, 147, 90, .35), inset 0 -3px 0 rgba(0, 0, 0, .15);
+}
+.measure-btn:active { transform: translateY(1px); box-shadow: 0 4px 10px rgba(18, 147, 90, .35); }
+.mb-dot { width: 22px; height: 22px; border-radius: 50%; background: rgba(255, 255, 255, .9); box-shadow: 0 0 0 5px rgba(255, 255, 255, .25); }
+.busy {
+  display: grid; grid-template-columns: auto 1fr; gap: 8px 12px; align-items: center;
+  background: var(--accent-soft); border-radius: 12px; padding: 12px 14px;
+}
+.busy-txt { display: flex; flex-direction: column; }
+.busy-bar { grid-column: 1 / -1; height: 6px; background: rgba(11, 116, 128, .15); border-radius: 3px; overflow: hidden; }
+.busy-bar span { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 3px; }
+.spinner {
+  width: 26px; height: 26px; border-radius: 50%;
+  border: 3px solid rgba(11, 116, 128, .2); border-top-color: var(--accent);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .spinner { animation: spin .9s linear infinite; }
+  .busy-bar span { transition: width .9s linear; }
+  .fill, .mark { transition: all .5s ease; }
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ===== report slip ===== */
+.slip { background: var(--panel); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
 .slip-head {
   display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; padding: 14px 16px;
   border-bottom: 1px dashed var(--line);
@@ -113,12 +185,17 @@ header { display: flex; flex-wrap: wrap; align-items: end; justify-content: spac
 .tag { display: inline-block; font-size: 12px; padding: 1px 8px; border-radius: 99px; background: var(--warn-soft); color: var(--warn); }
 .slip section { padding: 16px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 12px; }
 .slip section:last-child { border-bottom: 0; }
+.warnbox { background: var(--warn-soft); color: var(--warn); border-radius: 10px; padding: 8px 12px; font-size: 13.5px; }
 
-.verdict { display: grid; grid-template-columns: auto 1fr; gap: 16px; align-items: center; }
+.slip section.verdict { display: grid; grid-template-columns: auto 1fr; gap: 12px 16px; align-items: center; }
 .score {
-  width: 84px; height: 84px; border-radius: 50%; display: grid; place-items: center; text-align: center;
-  border: 6px solid var(--none); font-family: var(--font-num); font-size: 26px; font-weight: 700; line-height: 1;
+  width: 88px; height: 88px; border-radius: 50%; display: grid; place-items: center; text-align: center;
+  font-family: var(--font-num); font-size: 27px; font-weight: 700; line-height: 1;
+  background: conic-gradient(var(--c) calc(var(--p, 0) * 1%), var(--cs) 0);
+  position: relative;
 }
+.score::before { content: ""; position: absolute; inset: 7px; border-radius: 50%; background: var(--panel); }
+.score span { position: relative; }
 .score small { display: block; font-size: 11px; font-weight: 400; color: var(--muted); font-family: var(--font-ui); }
 .verdict h2 { font-size: 20px; }
 
@@ -126,7 +203,7 @@ header { display: flex; flex-wrap: wrap; align-items: end; justify-content: spac
 .s-warn { --c: var(--warn); --cs: var(--warn-soft); }
 .s-bad  { --c: var(--bad);  --cs: var(--bad-soft); }
 .s-none { --c: var(--none); --cs: var(--none-soft); }
-.score.s-good, .score.s-warn, .score.s-bad, .score.s-none { border-color: var(--c); color: var(--c); }
+.score.s-good, .score.s-warn, .score.s-bad, .score.s-none { color: var(--c); }
 .pill { display: inline-block; font-size: 12.5px; font-weight: 600; padding: 2px 10px; border-radius: 99px; background: var(--cs); color: var(--c); white-space: nowrap; }
 
 /* parameter rows */
@@ -152,7 +229,7 @@ header { display: flex; flex-wrap: wrap; align-items: end; justify-content: spac
 .bars { display: flex; flex-direction: column; gap: 6px; }
 .bars div { display: grid; grid-template-columns: minmax(0, 9.5em) 1fr 3.2em; gap: 8px; align-items: center; font-size: 13.5px; }
 .bars .track { height: 8px; background: var(--accent-soft); border-radius: 4px; overflow: hidden; }
-.bars .fill { height: 100%; background: var(--accent); border-radius: 4px; }
+.bars .fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); border-radius: 4px; }
 .bars .pct { font-family: var(--font-num); text-align: right; color: var(--muted); }
 .bars .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
@@ -164,105 +241,193 @@ header { display: flex; flex-wrap: wrap; align-items: end; justify-content: spac
 ul.advice { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
 .fine { font-size: 12.5px; color: var(--muted); }
 
-.empty { text-align: center; padding: 32px 16px; color: var(--muted); display: flex; flex-direction: column; gap: 8px; align-items: center; }
-.empty .big-btn { width: 56px; height: 56px; border-radius: 50%; background: var(--good); box-shadow: inset 0 -4px 0 rgba(0,0,0,.2); }
+.empty { text-align: center; padding: 28px 16px; color: var(--muted); display: flex; flex-direction: column; gap: 8px; align-items: center; }
+.empty .big-btn { width: 52px; height: 52px; border-radius: 50%; background: var(--good); box-shadow: inset 0 -4px 0 rgba(0,0,0,.2); }
 
-/* records */
+/* ===== charts ===== */
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.stat { background: var(--paper); border-radius: 12px; padding: 8px 10px; min-width: 0; }
+.stat span { display: block; font-size: 11.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stat b { font-family: var(--font-num); font-size: 19px; font-variant-numeric: tabular-nums; }
+.chart-card { gap: 6px; }
+.chart { width: 100%; height: auto; display: block; overflow: visible; }
+.chart .grid line { stroke: var(--line); stroke-width: 1; }
+.chart .grid text, .chart .xl { fill: var(--muted); font-size: 10px; font-family: var(--font-num); }
+.chart .bandr { fill: var(--good); opacity: .12; }
+.chart .ln { fill: none; stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
+.chart .area { opacity: .1; }
+.chart circle { stroke: var(--panel); stroke-width: 2; }
+.chart .lastv { font-family: var(--font-num); font-size: 11px; font-weight: 700; }
+.legend { font-size: 12px; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; }
+.legend .band { width: 14px; height: 10px; border-radius: 3px; background: var(--good); opacity: .25; display: inline-block; }
+
+/* ===== history ===== */
+.dev-sync {
+  display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px;
+  background: var(--accent-soft); border-radius: 12px; padding: 10px 12px;
+}
 .hist-scroll { overflow-x: auto; }
-table { border-collapse: collapse; width: 100%; font-size: 13.5px; min-width: 560px; }
-th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; min-width: 600px; }
+th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); vertical-align: middle; }
 th { font-size: 12px; color: var(--muted); font-weight: 600; }
 td.n { font-family: var(--font-num); font-variant-numeric: tabular-nums; text-align: right; }
-td select { padding: 4px 6px; font-size: 13px; max-width: 11em; }
-textarea { width: 100%; min-height: 120px; font: 12px/1.4 var(--font-num); background: var(--paper); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 8px; }
+td select { padding: 4px 6px; font-size: 13px; max-width: 11em; min-height: 32px; }
+tbody tr.clickable { cursor: pointer; }
+tbody tr.clickable:hover td { background: var(--accent-soft); }
+textarea { width: 100%; min-height: 120px; font: 12px/1.4 var(--font-num); background: var(--paper); color: var(--ink); border: 1px solid var(--line); border-radius: 10px; padding: 8px; }
+
+/* ===== bottom tab bar ===== */
+.tabbar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  background: var(--panel); border-top: 1px solid var(--line);
+  padding: 6px max(8px, env(safe-area-inset-left, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-right, 0px));
+  box-shadow: 0 -4px 16px rgba(15, 42, 51, .08);
+}
+.tabbar button {
+  border: 0; background: none; display: flex; flex-direction: column; align-items: center; gap: 2px;
+  font-size: 12.5px; color: var(--muted); padding: 4px 0; min-height: 52px; border-radius: 12px;
+}
+.tabbar svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.tabbar button[aria-selected="true"] { color: var(--accent); font-weight: 700; background: var(--accent-soft); }
+.tabbar button[aria-selected="true"] svg { fill: currentColor; fill-opacity: .15; }
 
 @media (max-width: 460px) {
-  .live b { font-size: 17px; }
-  .verdict { grid-template-columns: 1fr; justify-items: start; }
+  .tile b { font-size: 20px; }
+  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .suit div { grid-template-columns: 1fr; }
   .suit .note { grid-column: 1; }
 }
-@media (prefers-reduced-motion: no-preference) {
-  .fill, .mark { transition: all .5s ease; }
+@media (min-width: 760px) {
+  .wrap { padding-top: 20px; }
 }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
+<header class="appbar">
+  <div class="brand">
+    <svg class="logo" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5c3.6 4.3 6.5 8 6.5 11.4A6.5 6.5 0 0 1 5.5 13.9C5.5 10.5 8.4 6.8 12 2.5z" fill="currentColor"/><path d="M9 14.5a3 3 0 0 0 3 3" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></svg>
     <div>
-      <div class="eyebrow">เครื่องวัดคุณภาพน้ำ · ESP32</div>
-      <h1>ผลตรวจคุณภาพน้ำ</h1>
+      <div class="eyebrow">Smart Water System</div>
+      <h1>ตรวจคุณภาพน้ำ</h1>
     </div>
-    <div class="conn"><span class="dot" id="conn-dot"></span><span id="conn-text">กำลังเชื่อมต่อ…</span></div>
-  </header>
-
-  <div class="live" aria-label="ค่าสดจากเซนเซอร์">
-    <div><span>pH</span><b id="live-ph">-</b></div>
-    <div><span>TDS (ppm)</span><b id="live-tds">-</b></div>
-    <div><span>อุณหภูมิ (°C)</span><b id="live-temp">-</b></div>
   </div>
+  <div class="conn"><span class="dot" id="conn-dot"></span><span id="conn-text">กำลังเชื่อมต่อ…</span></div>
+</header>
 
-  <div class="panel" id="demo-panel" hidden>
-    <div>
-      <h2>โหมดทดลอง</h2>
-      <p class="hint" style="margin:0">หน้านี้ไม่ได้เปิดจาก WiFi ของเครื่องวัด ใส่ค่าเองเพื่อลองระบบวิเคราะห์ได้ ค่าที่ไม่ได้วัดให้ติ๊ก “ไม่ได้วัด”</p>
+<main class="wrap">
+  <!-- ===== แท็บ: วัด ===== -->
+  <section class="tab" id="tab-measure" aria-label="วัด">
+    <div class="live" aria-label="ค่าสดจากเซนเซอร์">
+      <div class="tile t-ph"><span>pH</span><b id="live-ph">-</b><svg class="spark" id="spark-ph" viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true"></svg></div>
+      <div class="tile t-tds"><span>TDS ppm</span><b id="live-tds">-</b><svg class="spark" id="spark-tds" viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true"></svg></div>
+      <div class="tile t-temp"><span>อุณหภูมิ °C</span><b id="live-temp">-</b><svg class="spark" id="spark-temp" viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true"></svg></div>
     </div>
-    <div class="row">
-      <div class="field"><label for="d-ph">pH</label><input id="d-ph" type="number" step="0.01" min="0" max="14" value="7.62"><span class="check"><input type="checkbox" id="d-ph-off">ไม่ได้วัด</span></div>
-      <div class="field"><label for="d-tds">TDS (ppm)</label><input id="d-tds" type="number" step="1" min="0" max="2000" value="184"><span class="check"><input type="checkbox" id="d-tds-off">ไม่ได้วัด</span></div>
-      <div class="field"><label for="d-temp">อุณหภูมิ (°C)</label><input id="d-temp" type="number" step="0.1" min="0" max="60" value="29.4"><span class="check"><input type="checkbox" id="d-temp-off">ไม่ได้วัด</span></div>
-    </div>
-    <div class="row"><button class="primary" id="d-send">กดปุ่มเขียว (จำลอง)</button></div>
-    <div id="dev-row" class="dev-row">
-      <label for="dev-addr" class="eyebrow">ต่อกับเครื่องวัดจริง</label>
+
+    <div class="panel measure-card">
       <div class="row">
-        <input id="dev-addr" type="text" inputmode="url" autocomplete="off" aria-describedby="dev-msg">
-        <button id="dev-connect">เชื่อมต่อ</button>
+        <input type="text" id="loc" placeholder="สถานที่เก็บตัวอย่าง เช่น บ่อหลังโรงเรียน" autocomplete="off" aria-label="สถานที่เก็บตัวอย่าง">
+        <button id="gps" hidden>ใช้ GPS</button>
       </div>
-      <span class="hint" id="dev-msg">ต่อคอมหรือมือถือเข้า WiFi “WaterMeter” ก่อน แล้วกดเชื่อมต่อ</span>
+      <div class="hint" id="loc-hint">ชื่อสถานที่จะถูกบันทึกไปกับผลตรวจครั้งต่อไป</div>
+      <button class="measure-btn" id="measure-btn"><span class="mb-dot" aria-hidden="true"></span><span id="measure-label">เริ่มวัด</span></button>
+      <div class="busy" id="busy" hidden>
+        <div class="spinner" aria-hidden="true"></div>
+        <div class="busy-txt"><b>กำลังวัด · รอให้ค่านิ่ง</b><span class="hint" id="busy-text">0 วินาที</span></div>
+        <div class="busy-bar"><span id="busy-fill"></span></div>
+      </div>
+      <p class="hint center" style="margin:0">หรือกดปุ่มสีเขียวที่ตัวเครื่อง · จุ่มหัววัดทีละตัว อย่าจุ่ม pH กับ TDS ในแก้วเดียวกันพร้อมกัน</p>
     </div>
-  </div>
 
-  <div class="panel">
-    <div class="row">
-      <label for="loc" class="field" style="flex:0 0 auto"><span class="eyebrow">สถานที่เก็บตัวอย่าง</span></label>
-    </div>
-    <div class="row">
-      <input type="text" id="loc" placeholder="เช่น บ่อหลังโรงเรียน อ.บ้านโป่ง" autocomplete="off">
-      <button id="gps" hidden>ใช้ GPS</button>
-    </div>
-    <div class="hint" id="loc-hint">ชื่อสถานที่จะถูกบันทึกไปกับผลตรวจครั้งต่อไป</div>
-  </div>
-
-  <div id="report"></div>
-
-  <div class="panel">
-    <div class="row" style="justify-content:space-between">
-      <h2>ประวัติการตรวจ</h2>
+    <div class="panel" id="demo-panel" hidden>
+      <div>
+        <h2>โหมดทดลอง</h2>
+        <p class="hint" style="margin:0">หน้านี้ยังไม่ได้ต่อกับเครื่องวัด ใส่ค่าเองเพื่อลองระบบวิเคราะห์ได้ ค่าที่ไม่ได้วัดให้ติ๊ก “ไม่ได้วัด”</p>
+      </div>
       <div class="row">
-        <button id="export">ส่งออก CSV</button>
-        <button id="clear-hist">ล้างประวัติ</button>
+        <div class="field"><label for="d-ph">pH</label><input id="d-ph" type="number" step="0.01" min="0" max="14" value="7.62"><span class="check"><input type="checkbox" id="d-ph-off">ไม่ได้วัด</span></div>
+        <div class="field"><label for="d-tds">TDS (ppm)</label><input id="d-tds" type="number" step="1" min="0" max="2000" value="184"><span class="check"><input type="checkbox" id="d-tds-off">ไม่ได้วัด</span></div>
+        <div class="field"><label for="d-temp">อุณหภูมิ (°C)</label><input id="d-temp" type="number" step="0.1" min="0" max="60" value="29.4"><span class="check"><input type="checkbox" id="d-temp-off">ไม่ได้วัด</span></div>
+      </div>
+      <div id="dev-row" class="dev-row">
+        <label for="dev-addr" class="eyebrow">ต่อกับเครื่องวัดจริง</label>
+        <div class="row">
+          <input id="dev-addr" type="text" inputmode="url" autocomplete="off" aria-describedby="dev-msg">
+          <button id="dev-connect">เชื่อมต่อ</button>
+        </div>
+        <span class="hint" id="dev-msg">ต่อมือถือเข้า WiFi “WaterMeter” ก่อน แล้วกดเชื่อมต่อ</span>
       </div>
     </div>
-    <p class="hint" style="margin:0">เลือก “แหล่งน้ำจริง” เมื่อรู้ว่าน้ำมาจากไหน แล้วส่งออก CSV ไปเทรนโมเดลใหม่ (ดู model/train.py) ยิ่งมีข้อมูลจริงมาก โมเดลยิ่งแม่นขึ้น</p>
-    <div class="row" id="clear-confirm" hidden>
-      <span>ลบประวัติทั้งหมดในมือถือนี้?</span>
-      <button id="clear-yes" class="primary">ลบเลย</button>
-      <button id="clear-no">ยกเลิก</button>
-    </div>
-    <div class="hist-scroll"><table>
-      <thead><tr><th>วันเวลา</th><th>สถานที่</th><th>pH</th><th>TDS</th><th>°C</th><th>ผล</th><th>คาดว่าเป็น</th><th>แหล่งน้ำจริง</th></tr></thead>
-      <tbody id="hist-body"></tbody>
-    </table></div>
-    <div id="csv-box" hidden>
-      <textarea id="csv-text" readonly></textarea>
-      <div class="row"><span class="hint" id="csv-msg"></span><a id="csv-dl" hidden download="water-samples.csv">ดาวน์โหลดไฟล์</a></div>
-    </div>
-  </div>
 
-  <p class="fine" id="model-info"></p>
-</div>
+    <div id="report"></div>
+  </section>
+
+  <!-- ===== แท็บ: กราฟ ===== -->
+  <section class="tab" id="tab-charts" aria-label="กราฟ" hidden>
+    <div class="panel">
+      <div class="row between">
+        <h2>แนวโน้มคุณภาพน้ำ</h2>
+        <div class="row">
+          <select id="chart-loc" aria-label="เลือกสถานที่"><option value="">ทุกสถานที่</option></select>
+          <select id="chart-range" aria-label="จำนวนผลตรวจ">
+            <option value="10">10 ครั้งล่าสุด</option>
+            <option value="30" selected>30 ครั้งล่าสุด</option>
+            <option value="0">ทั้งหมด</option>
+          </select>
+        </div>
+      </div>
+      <div class="stats" id="stats"></div>
+    </div>
+    <div class="panel chart-card"><div class="row between"><h3>pH ความเป็นกรด-ด่าง</h3><span class="legend"><i class="band"></i>เกณฑ์น้ำดื่ม 6.5–8.5</span></div><div id="chart-ph"></div></div>
+    <div class="panel chart-card"><div class="row between"><h3>TDS สารที่ละลายในน้ำ (ppm)</h3><span class="legend"><i class="band"></i>ไม่เกิน 500</span></div><div id="chart-tds"></div></div>
+    <div class="panel chart-card"><div class="row between"><h3>อุณหภูมิน้ำ (°C)</h3><span class="legend"><i class="band"></i>ปกติ 25–32</span></div><div id="chart-temp"></div></div>
+    <div class="panel"><h3>AI คาดว่าน้ำมาจาก (นับจากผลตรวจในช่วงนี้)</h3><div id="chart-src"></div></div>
+  </section>
+
+  <!-- ===== แท็บ: ประวัติ ===== -->
+  <section class="tab" id="tab-history" aria-label="ประวัติ" hidden>
+    <div class="panel">
+      <div class="row between">
+        <h2>ประวัติการตรวจ</h2>
+        <div class="row">
+          <button id="export">ส่งออก CSV</button>
+          <button id="clear-hist">ล้างประวัติ</button>
+        </div>
+      </div>
+      <div class="row" id="clear-confirm" hidden>
+        <span>ลบประวัติทั้งหมดในมือถือนี้?</span>
+        <button id="clear-yes" class="danger">ลบเลย</button>
+        <button id="clear-no">ยกเลิก</button>
+      </div>
+      <div class="dev-sync" id="dev-sync" hidden>
+        <div><b>ข้อมูลที่บันทึกในเครื่องวัด</b><div class="hint" id="sync-msg">-</div></div>
+        <div class="row">
+          <button id="sync-dev">ดึงข้อมูลจากเครื่อง</button>
+          <button id="clear-dev">ล้างข้อมูลในเครื่อง</button>
+        </div>
+      </div>
+      <p class="hint" style="margin:0">แตะแถวเพื่อดูใบรายงานผล · เลือก “แหล่งน้ำจริง” เมื่อรู้ว่าน้ำมาจากไหน แล้วส่งออก CSV ไปเทรนโมเดลใหม่ (model/train.py) ยิ่งมีข้อมูลจริงมาก AI ยิ่งแม่นขึ้น</p>
+      <div class="hist-scroll"><table>
+        <thead><tr><th>วันเวลา</th><th>สถานที่</th><th>pH</th><th>TDS</th><th>°C</th><th>คะแนน</th><th>AI คาดว่าเป็น</th><th>แหล่งน้ำจริง</th></tr></thead>
+        <tbody id="hist-body"></tbody>
+      </table></div>
+      <div id="csv-box" hidden>
+        <textarea id="csv-text" readonly></textarea>
+        <div class="row"><span class="hint" id="csv-msg"></span><a id="csv-dl" hidden download="water-samples.csv">ดาวน์โหลดไฟล์</a></div>
+      </div>
+    </div>
+    <p class="fine" id="model-info"></p>
+  </section>
+</main>
+
+<nav class="tabbar" role="tablist" aria-label="เมนู">
+  <button role="tab" data-go="measure" aria-selected="true">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c3 3.6 5.5 6.7 5.5 9.6A5.5 5.5 0 0 1 6.5 12.6C6.5 9.7 9 6.6 12 3z"/></svg>วัด</button>
+  <button role="tab" data-go="charts" aria-selected="false">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19h16M6 15l4-5 3 3 5-7"/></svg>กราฟ</button>
+  <button role="tab" data-go="history" aria-selected="false">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14v14H5zM8 9h8M8 12h8M8 15h5"/></svg>ประวัติ</button>
+</nav>
 
 <script>
 /* โมเดลประเมินแหล่งน้ำ (Gaussian Naive Bayes)
@@ -479,6 +644,19 @@ function fmtTime(ms) {
   try { return new Date(ms).toLocaleString("th-TH", { dateStyle: "long", timeStyle: "medium" }); }
   catch (e) { return new Date(ms).toLocaleString(); }
 }
+function fmtRow(ms) {
+  try { return new Date(ms).toLocaleString("th-TH", { day: "numeric", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit" }); }
+  catch (e) { return new Date(ms).toLocaleString(); }
+}
+function fmtShort(ms) {
+  try { return new Date(ms).toLocaleDateString("th-TH", { day: "numeric", month: "short" }); }
+  catch (e) { return ""; }
+}
+function timeNote(rec) {
+  if (rec.timeSource === "phone") return " (เวลาจากมือถือ)";
+  if (rec.timeSource === "unknown") return " (ไม่ทราบเวลาจริง: วัดตอนไม่ได้ต่อมือถือ)";
+  return "";
+}
 
 function scaleHtml(kind, value) {
   if (kind === "ph") {
@@ -494,7 +672,7 @@ function scaleHtml(kind, value) {
   return `<div class="scale" aria-hidden="true"><div class="bar tds-bar"></div>
     <div class="ok" style="left:0;width:${lp(500)}%"></div>
     ${pos !== null ? `<div class="mark" style="left:${pos}%"></div>` : ""}
-    <div class="ticks"><span style="left:0">1</span><span style="left:${lp(50)}%">50</span><span style="left:${lp(500)}%">500</span><span style="left:100%">2000 ppm</span></div></div>`;
+    <div class="ticks"><span style="left:0">1</span><span style="left:${lp(50)}%">50</span><span style="left:${lp(500)}%">500</span><span style="left:100%">2000</span></div></div>`;
 }
 
 function renderReport(rec) {
@@ -510,23 +688,28 @@ function renderReport(rec) {
       ${unsure ? `<p class="hint" style="margin:0">ค่าที่วัดได้ใกล้เคียงกับหลายแหล่ง จึงยังระบุได้ไม่ชัด ถ้ามีกลิ่นคลอรีนมักเป็นน้ำประปา ถ้าขุ่นมักเป็นน้ำผิวดิน</p>` : ""}
       <div class="bars">${src.slice(0, 4).map(s => `<div><span class="nm">${esc(s.name)}</span><span class="track"><span class="fill" style="display:block;width:${(s.p * 100).toFixed(1)}%"></span></span><span class="pct">${Math.round(s.p * 100)}%</span></div>`).join("")}</div>`;
   }
+  const stab = rec.stable === false
+    ? `<div class="warnbox">⚠️ ค่ายังไม่นิ่งภายใน ${rec.wait || 30} วินาที ผลอาจคลาดเคลื่อน ลองวัดใหม่โดยถือหัววัดให้นิ่งในน้ำ</div>`
+    : "";
   $("report").innerHTML = `
   <article class="slip" aria-live="polite">
     <div class="slip-head">
       <div class="meta">
         <span class="eyebrow">ใบรายงานผล${rec.example ? ` <span class="tag">ตัวอย่าง</span>` : ""}</span>
-        <span>🕒 ${esc(fmtTime(rec.time))}${rec.timeSource === "phone" ? " (เวลาจากมือถือ)" : ""}</span>
+        <span>🕒 ${esc(fmtTime(rec.time))}${esc(timeNote(rec))}</span>
         <span>📍 ${rec.location ? esc(rec.location) : "ไม่ได้ระบุสถานที่"}${rec.gps ? ` · <a href="https://maps.google.com/?q=${rec.gps.lat},${rec.gps.lon}" target="_blank" rel="noopener">${rec.gps.lat.toFixed(5)}, ${rec.gps.lon.toFixed(5)}</a>` : ""}</span>
+        ${rec.stable === true ? `<span>✅ ค่านิ่งใน ${rec.wait} วินาที แล้วเฉลี่ย 6 ค่าล่าสุด</span>` : ""}
       </div>
       <div class="sample-no">ครั้งที่<br>${esc(rec.label)}</div>
     </div>
 
     <section class="verdict">
-      <div class="score s-${a.grade.st}">${a.score === null ? "–" : a.score}<small>/100</small></div>
+      <div class="score s-${a.grade.st}" style="--p:${a.score === null ? 0 : a.score}"><span>${a.score === null ? "–" : a.score}<small>/100</small></span></div>
       <div>
         <h2>${esc(a.grade.text)}</h2>
-        <div class="hint">คะแนนรวมจาก pH และ TDS</div>
+        <div class="hint">คะแนนรวมจาก pH และ TDS เทียบเกณฑ์น้ำดื่มของกรมอนามัย</div>
       </div>
+      ${stab ? `<div style="grid-column:1/-1">${stab}</div>` : ""}
     </section>
 
     <section>
@@ -550,7 +733,7 @@ function renderReport(rec) {
     </section>
 
     <section>
-      <h3>น้ำนี้น่าจะมาจาก</h3>
+      <h3>🤖 AI วิเคราะห์: น้ำนี้น่าจะมาจาก</h3>
       ${srcHtml}
     </section>
 
@@ -570,52 +753,98 @@ function renderReport(rec) {
 function renderEmpty() {
   $("report").innerHTML = `<div class="slip"><div class="empty">
     <div class="big-btn" aria-hidden="true"></div>
-    <h2>กดปุ่มสีเขียวที่เครื่องวัด</h2>
-    <p style="margin:0">จุ่มหัววัดลงในน้ำ รอให้ค่าบนจอนิ่งประมาณ 30 วินาที แล้วกดปุ่ม ผลวิเคราะห์จะแสดงที่นี่</p>
-    <button id="web-measure">หรือกดวัดจากหน้านี้</button></div></div>`;
-  $("web-measure").onclick = webMeasure;
+    <h2>พร้อมวัดแล้ว</h2>
+    <p style="margin:0">จุ่มหัววัดลงในน้ำ แล้วกด “เริ่มวัด” หรือปุ่มสีเขียวที่เครื่อง ระบบจะรอให้ค่านิ่ง เฉลี่ยค่า แล้วให้ AI วิเคราะห์ให้อัตโนมัติ</p>
+  </div></div>`;
 }
 
-/* ===== ประวัติ (เก็บในมือถือ) ===== */
+/* ===== แท็บ ===== */
 const store = {
   get(k, d) { try { const s = localStorage.getItem(k); return s ? JSON.parse(s) : d; } catch (e) { return d; } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
 };
+const TABS = ["measure", "charts", "history"];
+function showTab(name) {
+  if (!TABS.includes(name)) name = "measure";
+  TABS.forEach(t => { $("tab-" + t).hidden = t !== name; });
+  document.querySelectorAll(".tabbar button").forEach(b => b.setAttribute("aria-selected", b.dataset.go === name ? "true" : "false"));
+  store.set("wqm-tab", name);
+  if (name === "charts") renderCharts();
+  window.scrollTo(0, 0);
+}
+document.querySelectorAll(".tabbar button").forEach(b => (b.onclick = () => showTab(b.dataset.go)));
+
+/* ===== ค่าสด + กราฟเส้นเล็ก ===== */
+const liveBuf = { ph: [], tds: [], temp: [] };
+function drawSpark(k) {
+  const el = $("spark-" + k), arr = liveBuf[k], ys = arr.filter(has);
+  if (ys.length < 2) { el.innerHTML = ""; return; }
+  let lo = Math.min(...ys), hi = Math.max(...ys);
+  const minSpan = k === "ph" ? 0.2 : k === "tds" ? 10 : 0.5;
+  if (hi - lo < minSpan) { const m = (hi + lo) / 2; lo = m - minSpan / 2; hi = m + minSpan / 2; }
+  const n = 60, pts = [];
+  arr.forEach((y, i) => { if (has(y)) pts.push([((i + n - arr.length) / (n - 1)) * 100, 28 - ((y - lo) / (hi - lo)) * 26]); });
+  const line = pts.map(p => p[0].toFixed(1) + "," + p[1].toFixed(1)).join(" ");
+  el.innerHTML = `<polygon points="${line} ${pts[pts.length - 1][0].toFixed(1)},30 ${pts[0][0].toFixed(1)},30"/><polyline points="${line}"/>`;
+}
+function setLive(v) {
+  $("live-ph").textContent = f(v.ph, 2);
+  $("live-tds").textContent = fTds(v.tds);
+  $("live-temp").textContent = f(v.temp, 1);
+  ["ph", "tds", "temp"].forEach(k => {
+    liveBuf[k].push(has(v[k]) ? v[k] : null);
+    if (liveBuf[k].length > 60) liveBuf[k].shift();
+    drawSpark(k);
+  });
+}
+
+/* ===== ประวัติ (เก็บในมือถือ) ===== */
 let records = store.get("wqm-history", []);
+const byTime = () => records.slice().sort((a, b) => a.time - b.time);
 
 function renderHistory() {
   const opts = [`<option value="">ไม่ทราบ</option>`].concat(MODEL.classes.map(c => `<option value="${c.id}">${esc(c.name)}</option>`)).join("");
-  $("hist-body").innerHTML = records.length ? records.slice().reverse().map(h => {
+  $("hist-body").innerHTML = records.length ? byTime().reverse().map(h => {
     const a = analyze(h.values);
     const top = a.source ? a.source[0].name : "-";
-    return `<tr><td>${esc(fmtTime(h.time))}</td><td>${esc(h.location || "-")}</td>
+    return `<tr class="clickable" data-key="${esc(h.key)}"><td>${esc(fmtRow(h.time))}${h.timeSource === "unknown" ? " *" : ""}</td><td>${esc(h.location || "-")}</td>
       <td class="n">${f(h.values.ph, 2)}</td><td class="n">${fTds(h.values.tds)}</td><td class="n">${f(h.values.temp, 1)}</td>
       <td><span class="pill s-${a.grade.st}">${a.score === null ? "–" : a.score}</span></td><td>${esc(top)}</td>
       <td><select data-key="${esc(h.key)}" aria-label="แหล่งน้ำจริง">${opts.replace(`value="${h.truth || ""}"`, `value="${h.truth || ""}" selected`)}</select></td></tr>`;
   }).join("") : `<tr><td colspan="8" class="muted">ยังไม่มีประวัติ ผลตรวจทุกครั้งจะถูกบันทึกไว้ที่นี่</td></tr>`;
-  $("hist-body").querySelectorAll("select").forEach(sel => sel.onchange = () => {
+  $("hist-body").querySelectorAll("select").forEach(sel => (sel.onchange = () => {
     const h = records.find(x => x.key === sel.dataset.key);
     if (h) { h.truth = sel.value; store.set("wqm-history", records); }
-  });
+  }));
+  $("hist-body").querySelectorAll("tr[data-key]").forEach(tr => (tr.onclick = e => {
+    if (e.target.closest("select")) return;
+    const h = records.find(x => x.key === tr.dataset.key);
+    if (h) { showTab("measure"); renderReport(h); $("report").scrollIntoView({ behavior: "smooth", block: "start" }); }
+  }));
+}
+
+function saveRecords() {
+  if (records.length > 500) records.splice(0, records.length - 500);
+  store.set("wqm-history", records);
 }
 
 function addRecord(rec) {
   if (!rec.example && !records.some(h => h.key === rec.key)) {
     records.push(rec);
-    if (records.length > 500) records.shift();
-    store.set("wqm-history", records);
+    saveRecords();
   }
   renderReport(rec);
   renderHistory();
+  renderCharts();
 }
 
 function toCsv() {
-  const rows = [["time_iso", "location", "lat", "lon", "ph", "tds", "temp", "source_guess", "source_true"]];
-  records.forEach(h => {
+  const rows = [["time_iso", "location", "lat", "lon", "ph", "tds", "temp", "stable", "source_guess", "source_true"]];
+  byTime().forEach(h => {
     const a = analyze(h.values);
-    rows.push([new Date(h.time).toISOString(), h.location || "", h.gps ? h.gps.lat : "", h.gps ? h.gps.lon : "",
+    rows.push([h.timeSource === "unknown" ? "" : new Date(h.time).toISOString(), h.location || "", h.gps ? h.gps.lat : "", h.gps ? h.gps.lon : "",
       has(h.values.ph) ? h.values.ph : "", has(h.values.tds) ? h.values.tds : "", has(h.values.temp) ? h.values.temp : "",
-      a.source ? a.source[0].id : "", h.truth || ""]);
+      h.stable === false ? "no" : "yes", a.source ? a.source[0].id : "", h.truth || ""]);
   });
   return rows.map(r => r.map(c => /[",\n]/.test(String(c)) ? `"${String(c).replace(/"/g, '""')}"` : c).join(",")).join("\n");
 }
@@ -628,7 +857,7 @@ $("export").onclick = () => {
   const done = () => ($("csv-msg").textContent = "คัดลอกแล้ว");
   const manual = () => ($("csv-msg").textContent = "เลือกข้อความด้านบนแล้วคัดลอกเอง");
   if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(csv).then(done, manual); else manual();
-  if (location.protocol === "http:") {
+  if (location.protocol === "http:" || location.protocol === "file:") {
     const dl = $("csv-dl");
     dl.href = URL.createObjectURL(new Blob(["﻿" + csv], { type: "text/csv" }));
     dl.hidden = false;
@@ -638,8 +867,89 @@ $("clear-hist").onclick = () => ($("clear-confirm").hidden = false);
 $("clear-no").onclick = () => ($("clear-confirm").hidden = true);
 $("clear-yes").onclick = () => {
   records = []; store.set("wqm-history", records);
-  $("clear-confirm").hidden = true; renderHistory();
+  $("clear-confirm").hidden = true; renderHistory(); renderCharts();
 };
+
+/* ===== กราฟ ===== */
+function niceTicks(lo, hi, count) {
+  const step0 = (hi - lo) / count, mag = Math.pow(10, Math.floor(Math.log10(step0))), err = step0 / mag;
+  const step = (err >= 7.5 ? 10 : err >= 3.5 ? 5 : err >= 1.5 ? 2 : 1) * mag;
+  const t = [];
+  for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) t.push(+v.toFixed(6));
+  return t;
+}
+
+function lineChart(list, key, o) {
+  const pts = list.map(r => ({ y: r.values[key], t: r.time, r }));
+  const ys = pts.map(p => p.y).filter(has);
+  if (!ys.length) return `<p class="muted" style="margin:0">ยังไม่มีข้อมูล${o.name}ในช่วงนี้</p>`;
+  const W = 340, H = 170, L = 34, R = 38, T = 10, B = 24;
+  let lo = Math.min(...ys, o.min), hi = Math.max(...ys, o.max);
+  const pad = (hi - lo) * 0.06 || 1;
+  lo = Math.max(o.floor !== undefined ? o.floor : -Infinity, lo - pad);
+  hi += pad;
+  const X = i => L + (pts.length === 1 ? (W - L - R) / 2 : (i * (W - L - R)) / (pts.length - 1));
+  const Y = v => T + ((hi - v) / (hi - lo)) * (H - T - B);
+  let s = `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="กราฟ${esc(o.name)} ${pts.length} ครั้ง">`;
+  s += `<g class="grid">` + niceTicks(lo, hi, 4).map(t =>
+    `<line x1="${L}" x2="${W - R}" y1="${Y(t).toFixed(1)}" y2="${Y(t).toFixed(1)}"/><text x="${L - 6}" y="${(Y(t) + 3.5).toFixed(1)}" text-anchor="end">${+t.toFixed(o.dec)}</text>`).join("") + `</g>`;
+  if (o.band) {
+    const b0 = Math.max(o.band[0], lo), b1 = Math.min(o.band[1], hi);
+    if (b1 > b0) s += `<rect class="bandr" x="${L}" y="${Y(b1).toFixed(1)}" width="${W - L - R}" height="${(Y(b0) - Y(b1)).toFixed(1)}"/>`;
+  }
+  let seg = [];
+  const flush = () => { if (seg.length) s += `<polyline class="ln" style="stroke:${o.color}" points="${seg.join(" ")}"/>`; seg = []; };
+  pts.forEach((p, i) => { if (has(p.y)) seg.push(`${X(i).toFixed(1)},${Y(p.y).toFixed(1)}`); else flush(); });
+  flush();
+  pts.forEach((p, i) => {
+    if (!has(p.y)) return;
+    const st = o.status(p.y);
+    s += `<circle cx="${X(i).toFixed(1)}" cy="${Y(p.y).toFixed(1)}" r="4.5" style="fill:var(--${st})"><title>${esc(fmtTime(p.t))} · ${esc(o.fmt(p.y))}${p.r.location ? " · " + esc(p.r.location) : ""}</title></circle>`;
+  });
+  s += `<text class="xl" x="${L}" y="${H - 6}">${esc(fmtShort(pts[0].t))}</text>`;
+  if (pts.length > 1) s += `<text class="xl" x="${W - R}" y="${H - 6}" text-anchor="end">${esc(fmtShort(pts[pts.length - 1].t))}</text>`;
+  s += `<text class="xl" x="${(L + W - R) / 2}" y="${H - 6}" text-anchor="middle">${pts.length} ครั้ง</text>`;
+  const li = pts.map(p => has(p.y)).lastIndexOf(true);
+  s += `<text class="lastv" x="${(X(li) + 8).toFixed(1)}" y="${(Y(pts[li].y) + 4).toFixed(1)}" style="fill:${o.color}">${esc(o.fmt(pts[li].y))}</text>`;
+  return s + `</svg>`;
+}
+
+function renderCharts() {
+  const locs = [...new Set(records.map(r => r.location || "").filter(Boolean))];
+  const cur = $("chart-loc").value;
+  $("chart-loc").innerHTML = `<option value="">ทุกสถานที่</option>` + locs.map(l => `<option value="${esc(l)}"${l === cur ? " selected" : ""}>${esc(l)}</option>`).join("");
+  const n = +$("chart-range").value;
+  let list = byTime().filter(r => !cur || (r.location || "") === cur);
+  if (n > 0) list = list.slice(-n);
+
+  const phs = list.map(r => r.values.ph).filter(has), tdss = list.map(r => r.values.tds).filter(has);
+  const both = list.filter(r => has(r.values.ph) && has(r.values.tds));
+  const pass = both.filter(r => r.values.ph >= 6.5 && r.values.ph <= 8.5 && r.values.tds <= 500).length;
+  const avg = a => a.reduce((x, y) => x + y, 0) / a.length;
+  $("stats").innerHTML = [
+    ["จำนวนครั้ง", String(list.length)],
+    ["pH เฉลี่ย", phs.length ? avg(phs).toFixed(2) : "-"],
+    ["TDS เฉลี่ย", tdss.length ? fTds(avg(tdss)) : "-"],
+    ["ผ่านเกณฑ์น้ำดื่ม", both.length ? Math.round((pass / both.length) * 100) + "%" : "-"]
+  ].map(([k, v]) => `<div class="stat"><span>${k}</span><b>${esc(v)}</b></div>`).join("");
+
+  $("chart-ph").innerHTML = lineChart(list, "ph", { name: "pH", min: 6, max: 9, floor: 0, band: [6.5, 8.5], dec: 1,
+    color: "var(--c-ph)", fmt: v => v.toFixed(2), status: v => analyzePh(v).st });
+  $("chart-tds").innerHTML = lineChart(list, "tds", { name: "TDS", min: 0, max: 600, floor: 0, band: [0, 500], dec: 0,
+    color: "var(--c-tds)", fmt: v => (tdsUnder(v) ? "<" + tdsMin() : String(Math.round(v))), status: v => analyzeTds(v).st });
+  $("chart-temp").innerHTML = lineChart(list, "temp", { name: "อุณหภูมิ", min: 24, max: 33, band: [25, 32], dec: 0,
+    color: "var(--c-temp)", fmt: v => v.toFixed(1), status: v => analyzeTemp(v).st });
+
+  const cnt = {};
+  let tot = 0;
+  list.forEach(r => { const c = classify(r.values); if (c) { cnt[c[0].name] = (cnt[c[0].name] || 0) + 1; tot++; } });
+  const rows = Object.entries(cnt).sort((a, b) => b[1] - a[1]);
+  $("chart-src").innerHTML = tot
+    ? `<div class="bars">${rows.map(([nm, c]) => `<div><span class="nm">${esc(nm)}</span><span class="track"><span class="fill" style="display:block;width:${((c / tot) * 100).toFixed(1)}%"></span></span><span class="pct">${c} ครั้ง</span></div>`).join("")}</div>`
+    : `<p class="muted" style="margin:0">ยังไม่มีข้อมูล</p>`;
+}
+$("chart-range").onchange = renderCharts;
+$("chart-loc").onchange = renderCharts;
 
 /* ===== สถานที่ ===== */
 let gps = null;
@@ -666,10 +976,20 @@ const DEFAULT_DEVICE = "192.168.4.1";
 const canReachDevice = location.protocol !== "https:"; // เว็บ https เรียกเครื่องที่เป็น http ไม่ได้
 let apiBase = null;   // null = ยังไม่ได้ต่อเครื่อง
 let lastKey = null;
+let sawBusy = false;
 let mode = "";
 
 function setConn(kind, text) { $("conn-dot").className = "dot " + kind; $("conn-text").textContent = text; }
-function setLive(v) { $("live-ph").textContent = f(v.ph, 2); $("live-tds").textContent = fTds(v.tds); $("live-temp").textContent = f(v.temp, 1); }
+
+function setBusy(busy, sec, max) {
+  $("busy").hidden = !busy;
+  $("measure-btn").disabled = !!busy;
+  $("measure-label").textContent = busy ? "กำลังวัด…" : "เริ่มวัด";
+  if (busy) {
+    $("busy-text").textContent = `${sec} วินาที · รอนานสุด ${max} วินาที`;
+    $("busy-fill").style.width = Math.min(100, (sec / max) * 100) + "%";
+  }
+}
 
 async function getJson(url, opts, timeoutMs) {
   const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), timeoutMs || 3000);
@@ -692,23 +1012,35 @@ async function findDevice() {
   return null;
 }
 
+function recordFromDevice(it, live) {
+  const known = it.epoch > 0;
+  const rec = newRecord(it.values, {
+    key: "dev-" + it.id, label: "#" + it.id,
+    time: known ? it.epoch * 1000 : Date.now(),
+    timeSource: known ? "device" : (live ? "phone" : "unknown"),
+    stable: it.stable, wait: it.wait
+  });
+  if (!live) { rec.location = ""; rec.gps = null; }   // วัดตอนมือถือไม่ได้ดูอยู่ ไม่รู้สถานที่
+  return rec;
+}
+
 async function poll() {
   try {
     const s = await getJson(apiBase + "/api/state");
-    setConn("on", "เชื่อมต่อเครื่องวัดแล้ว" + (apiBase ? " (" + apiBase.replace("http://", "") + ")" : ""));
+    setConn("on", "เชื่อมต่อเครื่องวัดแล้ว");
     setLive(s.live);
+    setBusy(s.busy, s.busy_s || 0, s.busy_max || 30);
+    if (s.busy) sawBusy = true;
     if (!s.time_set) fetch(apiBase + "/api/time?epoch=" + Math.floor(Date.now() / 1000), { method: "POST" }).catch(() => {});
     if (s.last) {
-      const key = s.boot + "-" + s.last.id;
+      const key = "dev-" + s.last.id;
       if (key !== lastKey) {
+        const fresh = lastKey !== null || sawBusy;     // เพิ่งวัดเสร็จตอนเปิดหน้านี้อยู่
         lastKey = key;
+        sawBusy = false;
         const old = records.find(h => h.key === key);
-        if (old) { renderReport(old); }
-        else addRecord(newRecord(s.last.values, {
-          key, label: "#" + s.last.id,
-          time: s.last.epoch ? s.last.epoch * 1000 : Date.now(),
-          timeSource: s.last.epoch ? "device" : "phone"
-        }));
+        if (old) { if (fresh) renderReport(old); }
+        else addRecord(recordFromDevice(s.last, fresh));
       }
     }
   } catch (e) {
@@ -717,9 +1049,35 @@ async function poll() {
   setTimeout(poll, 1000);
 }
 
+async function syncDevice() {
+  if (apiBase === null) return;
+  $("sync-msg").textContent = "กำลังดึงข้อมูล…";
+  try {
+    const d = await getJson(apiBase + "/api/log", {}, 6000);
+    const items = d.items || [];
+    let added = 0;
+    items.forEach(it => {
+      const old = records.find(h => h.key === "dev-" + it.id);
+      if (old) {
+        if (it.epoch > 0 && old.timeSource === "unknown") { old.time = it.epoch * 1000; old.timeSource = "device"; }
+        return;
+      }
+      records.push(recordFromDevice(it, false));
+      added++;
+    });
+    saveRecords();
+    $("sync-msg").textContent = `เครื่องเก็บไว้ ${items.length} ครั้ง · ดึงมาเพิ่ม ${added} ครั้ง`;
+    renderHistory();
+    renderCharts();
+  } catch (e) {
+    $("sync-msg").textContent = "ดึงข้อมูลไม่สำเร็จ ลองใหม่อีกครั้ง";
+  }
+}
+
 async function webMeasure() {
   if (apiBase === null) { demoSend(); return; }
-  try { await getJson(apiBase + "/api/measure", { method: "POST" }, 8000); } catch (e) { setConn("off", "สั่งวัดไม่สำเร็จ"); }
+  setBusy(true, 0, 30);
+  try { await getJson(apiBase + "/api/measure", { method: "POST" }, 5000); } catch (e) { setBusy(false); setConn("off", "สั่งวัดไม่สำเร็จ"); }
 }
 
 /* ===== โหมดทดลอง ===== */
@@ -739,14 +1097,16 @@ function enterDeviceMode(base) {
   apiBase = base;
   mode = "device";
   $("demo-panel").hidden = true;
+  $("dev-sync").hidden = false;
   renderEmpty();
   poll();
+  syncDevice();
 }
 
 function enterDemoMode() {
   if (mode === "demo") return;
   mode = "demo";
-  setConn("demo", "โหมดทดลอง (ไม่ได้ต่อเครื่องวัด)");
+  setConn("demo", "โหมดทดลอง");
   $("demo-panel").hidden = false;
   const sample = { ph: 7.62, tds: 184, temp: 29.4 };
   setLive(sample);
@@ -758,18 +1118,26 @@ async function connect(manual) {
   const base = await findDevice();
   if (base !== null) { enterDeviceMode(base); return; }
   enterDemoMode();
-  if (manual) $("dev-msg").textContent = "ไม่พบเครื่องวัดที่ " + deviceAddr() + " ตรวจว่าคอม/มือถือต่อ WiFi WaterMeter อยู่";
+  if (manual) $("dev-msg").textContent = "ไม่พบเครื่องวัดที่ " + deviceAddr() + " ตรวจว่ามือถือต่อ WiFi WaterMeter อยู่";
   else if (canReachDevice) setTimeout(() => { if (mode === "demo") connect(false); }, 5000); // ลองหาใหม่เรื่อยๆ
 }
 
 /* ===== เริ่มทำงาน ===== */
-$("model-info").textContent = `โมเดลประเมินแหล่งน้ำ: Naive Bayes รุ่น ${MODEL.version} · ข้อมูลที่ใช้: ${MODEL.trained_on}` +
+$("model-info").textContent = `AI ประเมินแหล่งน้ำ: Naive Bayes รุ่น ${MODEL.version} · ข้อมูลที่ใช้: ${MODEL.trained_on}` +
   (MODEL.accuracy !== null ? ` · ความแม่นยำจากการทดสอบ ${Math.round(MODEL.accuracy * 100)}% (${MODEL.samples} ตัวอย่าง)` : " · ยังไม่ได้วัดความแม่นยำกับข้อมูลจริง");
 renderHistory();
-$("d-send").onclick = demoSend;
+renderCharts();
+$("measure-btn").onclick = webMeasure;
+$("sync-dev").onclick = syncDevice;
+$("clear-dev").onclick = async () => {
+  if (apiBase === null || !confirm("ลบผลตรวจที่เก็บในเครื่องวัดทั้งหมด? (ประวัติในมือถือยังอยู่)")) return;
+  try { await getJson(apiBase + "/api/log/clear", { method: "POST" }, 4000); $("sync-msg").textContent = "ล้างข้อมูลในเครื่องแล้ว"; }
+  catch (e) { $("sync-msg").textContent = "ล้างไม่สำเร็จ"; }
+};
 $("dev-row").hidden = !canReachDevice;
 $("dev-addr").value = deviceAddr();
 $("dev-connect").onclick = () => { store.set("wqm-device", $("dev-addr").value); connect(true); };
+showTab(store.get("wqm-tab", "measure"));
 
 if (canReachDevice) { setConn("", "กำลังค้นหาเครื่องวัด…"); connect(false); }
 else enterDemoMode();

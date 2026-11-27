@@ -182,6 +182,19 @@ function fmtTime(ms) {
   try { return new Date(ms).toLocaleString("th-TH", { dateStyle: "long", timeStyle: "medium" }); }
   catch (e) { return new Date(ms).toLocaleString(); }
 }
+function fmtRow(ms) {
+  try { return new Date(ms).toLocaleString("th-TH", { day: "numeric", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit" }); }
+  catch (e) { return new Date(ms).toLocaleString(); }
+}
+function fmtShort(ms) {
+  try { return new Date(ms).toLocaleDateString("th-TH", { day: "numeric", month: "short" }); }
+  catch (e) { return ""; }
+}
+function timeNote(rec) {
+  if (rec.timeSource === "phone") return " (เวลาจากมือถือ)";
+  if (rec.timeSource === "unknown") return " (ไม่ทราบเวลาจริง: วัดตอนไม่ได้ต่อมือถือ)";
+  return "";
+}
 
 function scaleHtml(kind, value) {
   if (kind === "ph") {
@@ -197,7 +210,7 @@ function scaleHtml(kind, value) {
   return `<div class="scale" aria-hidden="true"><div class="bar tds-bar"></div>
     <div class="ok" style="left:0;width:${lp(500)}%"></div>
     ${pos !== null ? `<div class="mark" style="left:${pos}%"></div>` : ""}
-    <div class="ticks"><span style="left:0">1</span><span style="left:${lp(50)}%">50</span><span style="left:${lp(500)}%">500</span><span style="left:100%">2000 ppm</span></div></div>`;
+    <div class="ticks"><span style="left:0">1</span><span style="left:${lp(50)}%">50</span><span style="left:${lp(500)}%">500</span><span style="left:100%">2000</span></div></div>`;
 }
 
 function renderReport(rec) {
@@ -213,23 +226,28 @@ function renderReport(rec) {
       ${unsure ? `<p class="hint" style="margin:0">ค่าที่วัดได้ใกล้เคียงกับหลายแหล่ง จึงยังระบุได้ไม่ชัด ถ้ามีกลิ่นคลอรีนมักเป็นน้ำประปา ถ้าขุ่นมักเป็นน้ำผิวดิน</p>` : ""}
       <div class="bars">${src.slice(0, 4).map(s => `<div><span class="nm">${esc(s.name)}</span><span class="track"><span class="fill" style="display:block;width:${(s.p * 100).toFixed(1)}%"></span></span><span class="pct">${Math.round(s.p * 100)}%</span></div>`).join("")}</div>`;
   }
+  const stab = rec.stable === false
+    ? `<div class="warnbox">⚠️ ค่ายังไม่นิ่งภายใน ${rec.wait || 30} วินาที ผลอาจคลาดเคลื่อน ลองวัดใหม่โดยถือหัววัดให้นิ่งในน้ำ</div>`
+    : "";
   $("report").innerHTML = `
   <article class="slip" aria-live="polite">
     <div class="slip-head">
       <div class="meta">
         <span class="eyebrow">ใบรายงานผล${rec.example ? ` <span class="tag">ตัวอย่าง</span>` : ""}</span>
-        <span>🕒 ${esc(fmtTime(rec.time))}${rec.timeSource === "phone" ? " (เวลาจากมือถือ)" : ""}</span>
+        <span>🕒 ${esc(fmtTime(rec.time))}${esc(timeNote(rec))}</span>
         <span>📍 ${rec.location ? esc(rec.location) : "ไม่ได้ระบุสถานที่"}${rec.gps ? ` · <a href="https://maps.google.com/?q=${rec.gps.lat},${rec.gps.lon}" target="_blank" rel="noopener">${rec.gps.lat.toFixed(5)}, ${rec.gps.lon.toFixed(5)}</a>` : ""}</span>
+        ${rec.stable === true ? `<span>✅ ค่านิ่งใน ${rec.wait} วินาที แล้วเฉลี่ย 6 ค่าล่าสุด</span>` : ""}
       </div>
       <div class="sample-no">ครั้งที่<br>${esc(rec.label)}</div>
     </div>
 
     <section class="verdict">
-      <div class="score s-${a.grade.st}">${a.score === null ? "–" : a.score}<small>/100</small></div>
+      <div class="score s-${a.grade.st}" style="--p:${a.score === null ? 0 : a.score}"><span>${a.score === null ? "–" : a.score}<small>/100</small></span></div>
       <div>
         <h2>${esc(a.grade.text)}</h2>
-        <div class="hint">คะแนนรวมจาก pH และ TDS</div>
+        <div class="hint">คะแนนรวมจาก pH และ TDS เทียบเกณฑ์น้ำดื่มของกรมอนามัย</div>
       </div>
+      ${stab ? `<div style="grid-column:1/-1">${stab}</div>` : ""}
     </section>
 
     <section>
@@ -253,7 +271,7 @@ function renderReport(rec) {
     </section>
 
     <section>
-      <h3>น้ำนี้น่าจะมาจาก</h3>
+      <h3>🤖 AI วิเคราะห์: น้ำนี้น่าจะมาจาก</h3>
       ${srcHtml}
     </section>
 
@@ -273,52 +291,98 @@ function renderReport(rec) {
 function renderEmpty() {
   $("report").innerHTML = `<div class="slip"><div class="empty">
     <div class="big-btn" aria-hidden="true"></div>
-    <h2>กดปุ่มสีเขียวที่เครื่องวัด</h2>
-    <p style="margin:0">จุ่มหัววัดลงในน้ำ รอให้ค่าบนจอนิ่งประมาณ 30 วินาที แล้วกดปุ่ม ผลวิเคราะห์จะแสดงที่นี่</p>
-    <button id="web-measure">หรือกดวัดจากหน้านี้</button></div></div>`;
-  $("web-measure").onclick = webMeasure;
+    <h2>พร้อมวัดแล้ว</h2>
+    <p style="margin:0">จุ่มหัววัดลงในน้ำ แล้วกด “เริ่มวัด” หรือปุ่มสีเขียวที่เครื่อง ระบบจะรอให้ค่านิ่ง เฉลี่ยค่า แล้วให้ AI วิเคราะห์ให้อัตโนมัติ</p>
+  </div></div>`;
 }
 
-/* ===== ประวัติ (เก็บในมือถือ) ===== */
+/* ===== แท็บ ===== */
 const store = {
   get(k, d) { try { const s = localStorage.getItem(k); return s ? JSON.parse(s) : d; } catch (e) { return d; } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
 };
+const TABS = ["measure", "charts", "history"];
+function showTab(name) {
+  if (!TABS.includes(name)) name = "measure";
+  TABS.forEach(t => { $("tab-" + t).hidden = t !== name; });
+  document.querySelectorAll(".tabbar button").forEach(b => b.setAttribute("aria-selected", b.dataset.go === name ? "true" : "false"));
+  store.set("wqm-tab", name);
+  if (name === "charts") renderCharts();
+  window.scrollTo(0, 0);
+}
+document.querySelectorAll(".tabbar button").forEach(b => (b.onclick = () => showTab(b.dataset.go)));
+
+/* ===== ค่าสด + กราฟเส้นเล็ก ===== */
+const liveBuf = { ph: [], tds: [], temp: [] };
+function drawSpark(k) {
+  const el = $("spark-" + k), arr = liveBuf[k], ys = arr.filter(has);
+  if (ys.length < 2) { el.innerHTML = ""; return; }
+  let lo = Math.min(...ys), hi = Math.max(...ys);
+  const minSpan = k === "ph" ? 0.2 : k === "tds" ? 10 : 0.5;
+  if (hi - lo < minSpan) { const m = (hi + lo) / 2; lo = m - minSpan / 2; hi = m + minSpan / 2; }
+  const n = 60, pts = [];
+  arr.forEach((y, i) => { if (has(y)) pts.push([((i + n - arr.length) / (n - 1)) * 100, 28 - ((y - lo) / (hi - lo)) * 26]); });
+  const line = pts.map(p => p[0].toFixed(1) + "," + p[1].toFixed(1)).join(" ");
+  el.innerHTML = `<polygon points="${line} ${pts[pts.length - 1][0].toFixed(1)},30 ${pts[0][0].toFixed(1)},30"/><polyline points="${line}"/>`;
+}
+function setLive(v) {
+  $("live-ph").textContent = f(v.ph, 2);
+  $("live-tds").textContent = fTds(v.tds);
+  $("live-temp").textContent = f(v.temp, 1);
+  ["ph", "tds", "temp"].forEach(k => {
+    liveBuf[k].push(has(v[k]) ? v[k] : null);
+    if (liveBuf[k].length > 60) liveBuf[k].shift();
+    drawSpark(k);
+  });
+}
+
+/* ===== ประวัติ (เก็บในมือถือ) ===== */
 let records = store.get("wqm-history", []);
+const byTime = () => records.slice().sort((a, b) => a.time - b.time);
 
 function renderHistory() {
   const opts = [`<option value="">ไม่ทราบ</option>`].concat(MODEL.classes.map(c => `<option value="${c.id}">${esc(c.name)}</option>`)).join("");
-  $("hist-body").innerHTML = records.length ? records.slice().reverse().map(h => {
+  $("hist-body").innerHTML = records.length ? byTime().reverse().map(h => {
     const a = analyze(h.values);
     const top = a.source ? a.source[0].name : "-";
-    return `<tr><td>${esc(fmtTime(h.time))}</td><td>${esc(h.location || "-")}</td>
+    return `<tr class="clickable" data-key="${esc(h.key)}"><td>${esc(fmtRow(h.time))}${h.timeSource === "unknown" ? " *" : ""}</td><td>${esc(h.location || "-")}</td>
       <td class="n">${f(h.values.ph, 2)}</td><td class="n">${fTds(h.values.tds)}</td><td class="n">${f(h.values.temp, 1)}</td>
       <td><span class="pill s-${a.grade.st}">${a.score === null ? "–" : a.score}</span></td><td>${esc(top)}</td>
       <td><select data-key="${esc(h.key)}" aria-label="แหล่งน้ำจริง">${opts.replace(`value="${h.truth || ""}"`, `value="${h.truth || ""}" selected`)}</select></td></tr>`;
   }).join("") : `<tr><td colspan="8" class="muted">ยังไม่มีประวัติ ผลตรวจทุกครั้งจะถูกบันทึกไว้ที่นี่</td></tr>`;
-  $("hist-body").querySelectorAll("select").forEach(sel => sel.onchange = () => {
+  $("hist-body").querySelectorAll("select").forEach(sel => (sel.onchange = () => {
     const h = records.find(x => x.key === sel.dataset.key);
     if (h) { h.truth = sel.value; store.set("wqm-history", records); }
-  });
+  }));
+  $("hist-body").querySelectorAll("tr[data-key]").forEach(tr => (tr.onclick = e => {
+    if (e.target.closest("select")) return;
+    const h = records.find(x => x.key === tr.dataset.key);
+    if (h) { showTab("measure"); renderReport(h); $("report").scrollIntoView({ behavior: "smooth", block: "start" }); }
+  }));
+}
+
+function saveRecords() {
+  if (records.length > 500) records.splice(0, records.length - 500);
+  store.set("wqm-history", records);
 }
 
 function addRecord(rec) {
   if (!rec.example && !records.some(h => h.key === rec.key)) {
     records.push(rec);
-    if (records.length > 500) records.shift();
-    store.set("wqm-history", records);
+    saveRecords();
   }
   renderReport(rec);
   renderHistory();
+  renderCharts();
 }
 
 function toCsv() {
-  const rows = [["time_iso", "location", "lat", "lon", "ph", "tds", "temp", "source_guess", "source_true"]];
-  records.forEach(h => {
+  const rows = [["time_iso", "location", "lat", "lon", "ph", "tds", "temp", "stable", "source_guess", "source_true"]];
+  byTime().forEach(h => {
     const a = analyze(h.values);
-    rows.push([new Date(h.time).toISOString(), h.location || "", h.gps ? h.gps.lat : "", h.gps ? h.gps.lon : "",
+    rows.push([h.timeSource === "unknown" ? "" : new Date(h.time).toISOString(), h.location || "", h.gps ? h.gps.lat : "", h.gps ? h.gps.lon : "",
       has(h.values.ph) ? h.values.ph : "", has(h.values.tds) ? h.values.tds : "", has(h.values.temp) ? h.values.temp : "",
-      a.source ? a.source[0].id : "", h.truth || ""]);
+      h.stable === false ? "no" : "yes", a.source ? a.source[0].id : "", h.truth || ""]);
   });
   return rows.map(r => r.map(c => /[",\n]/.test(String(c)) ? `"${String(c).replace(/"/g, '""')}"` : c).join(",")).join("\n");
 }
@@ -331,7 +395,7 @@ $("export").onclick = () => {
   const done = () => ($("csv-msg").textContent = "คัดลอกแล้ว");
   const manual = () => ($("csv-msg").textContent = "เลือกข้อความด้านบนแล้วคัดลอกเอง");
   if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(csv).then(done, manual); else manual();
-  if (location.protocol === "http:") {
+  if (location.protocol === "http:" || location.protocol === "file:") {
     const dl = $("csv-dl");
     dl.href = URL.createObjectURL(new Blob(["﻿" + csv], { type: "text/csv" }));
     dl.hidden = false;
@@ -341,8 +405,89 @@ $("clear-hist").onclick = () => ($("clear-confirm").hidden = false);
 $("clear-no").onclick = () => ($("clear-confirm").hidden = true);
 $("clear-yes").onclick = () => {
   records = []; store.set("wqm-history", records);
-  $("clear-confirm").hidden = true; renderHistory();
+  $("clear-confirm").hidden = true; renderHistory(); renderCharts();
 };
+
+/* ===== กราฟ ===== */
+function niceTicks(lo, hi, count) {
+  const step0 = (hi - lo) / count, mag = Math.pow(10, Math.floor(Math.log10(step0))), err = step0 / mag;
+  const step = (err >= 7.5 ? 10 : err >= 3.5 ? 5 : err >= 1.5 ? 2 : 1) * mag;
+  const t = [];
+  for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) t.push(+v.toFixed(6));
+  return t;
+}
+
+function lineChart(list, key, o) {
+  const pts = list.map(r => ({ y: r.values[key], t: r.time, r }));
+  const ys = pts.map(p => p.y).filter(has);
+  if (!ys.length) return `<p class="muted" style="margin:0">ยังไม่มีข้อมูล${o.name}ในช่วงนี้</p>`;
+  const W = 340, H = 170, L = 34, R = 38, T = 10, B = 24;
+  let lo = Math.min(...ys, o.min), hi = Math.max(...ys, o.max);
+  const pad = (hi - lo) * 0.06 || 1;
+  lo = Math.max(o.floor !== undefined ? o.floor : -Infinity, lo - pad);
+  hi += pad;
+  const X = i => L + (pts.length === 1 ? (W - L - R) / 2 : (i * (W - L - R)) / (pts.length - 1));
+  const Y = v => T + ((hi - v) / (hi - lo)) * (H - T - B);
+  let s = `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="กราฟ${esc(o.name)} ${pts.length} ครั้ง">`;
+  s += `<g class="grid">` + niceTicks(lo, hi, 4).map(t =>
+    `<line x1="${L}" x2="${W - R}" y1="${Y(t).toFixed(1)}" y2="${Y(t).toFixed(1)}"/><text x="${L - 6}" y="${(Y(t) + 3.5).toFixed(1)}" text-anchor="end">${+t.toFixed(o.dec)}</text>`).join("") + `</g>`;
+  if (o.band) {
+    const b0 = Math.max(o.band[0], lo), b1 = Math.min(o.band[1], hi);
+    if (b1 > b0) s += `<rect class="bandr" x="${L}" y="${Y(b1).toFixed(1)}" width="${W - L - R}" height="${(Y(b0) - Y(b1)).toFixed(1)}"/>`;
+  }
+  let seg = [];
+  const flush = () => { if (seg.length) s += `<polyline class="ln" style="stroke:${o.color}" points="${seg.join(" ")}"/>`; seg = []; };
+  pts.forEach((p, i) => { if (has(p.y)) seg.push(`${X(i).toFixed(1)},${Y(p.y).toFixed(1)}`); else flush(); });
+  flush();
+  pts.forEach((p, i) => {
+    if (!has(p.y)) return;
+    const st = o.status(p.y);
+    s += `<circle cx="${X(i).toFixed(1)}" cy="${Y(p.y).toFixed(1)}" r="4.5" style="fill:var(--${st})"><title>${esc(fmtTime(p.t))} · ${esc(o.fmt(p.y))}${p.r.location ? " · " + esc(p.r.location) : ""}</title></circle>`;
+  });
+  s += `<text class="xl" x="${L}" y="${H - 6}">${esc(fmtShort(pts[0].t))}</text>`;
+  if (pts.length > 1) s += `<text class="xl" x="${W - R}" y="${H - 6}" text-anchor="end">${esc(fmtShort(pts[pts.length - 1].t))}</text>`;
+  s += `<text class="xl" x="${(L + W - R) / 2}" y="${H - 6}" text-anchor="middle">${pts.length} ครั้ง</text>`;
+  const li = pts.map(p => has(p.y)).lastIndexOf(true);
+  s += `<text class="lastv" x="${(X(li) + 8).toFixed(1)}" y="${(Y(pts[li].y) + 4).toFixed(1)}" style="fill:${o.color}">${esc(o.fmt(pts[li].y))}</text>`;
+  return s + `</svg>`;
+}
+
+function renderCharts() {
+  const locs = [...new Set(records.map(r => r.location || "").filter(Boolean))];
+  const cur = $("chart-loc").value;
+  $("chart-loc").innerHTML = `<option value="">ทุกสถานที่</option>` + locs.map(l => `<option value="${esc(l)}"${l === cur ? " selected" : ""}>${esc(l)}</option>`).join("");
+  const n = +$("chart-range").value;
+  let list = byTime().filter(r => !cur || (r.location || "") === cur);
+  if (n > 0) list = list.slice(-n);
+
+  const phs = list.map(r => r.values.ph).filter(has), tdss = list.map(r => r.values.tds).filter(has);
+  const both = list.filter(r => has(r.values.ph) && has(r.values.tds));
+  const pass = both.filter(r => r.values.ph >= 6.5 && r.values.ph <= 8.5 && r.values.tds <= 500).length;
+  const avg = a => a.reduce((x, y) => x + y, 0) / a.length;
+  $("stats").innerHTML = [
+    ["จำนวนครั้ง", String(list.length)],
+    ["pH เฉลี่ย", phs.length ? avg(phs).toFixed(2) : "-"],
+    ["TDS เฉลี่ย", tdss.length ? fTds(avg(tdss)) : "-"],
+    ["ผ่านเกณฑ์น้ำดื่ม", both.length ? Math.round((pass / both.length) * 100) + "%" : "-"]
+  ].map(([k, v]) => `<div class="stat"><span>${k}</span><b>${esc(v)}</b></div>`).join("");
+
+  $("chart-ph").innerHTML = lineChart(list, "ph", { name: "pH", min: 6, max: 9, floor: 0, band: [6.5, 8.5], dec: 1,
+    color: "var(--c-ph)", fmt: v => v.toFixed(2), status: v => analyzePh(v).st });
+  $("chart-tds").innerHTML = lineChart(list, "tds", { name: "TDS", min: 0, max: 600, floor: 0, band: [0, 500], dec: 0,
+    color: "var(--c-tds)", fmt: v => (tdsUnder(v) ? "<" + tdsMin() : String(Math.round(v))), status: v => analyzeTds(v).st });
+  $("chart-temp").innerHTML = lineChart(list, "temp", { name: "อุณหภูมิ", min: 24, max: 33, band: [25, 32], dec: 0,
+    color: "var(--c-temp)", fmt: v => v.toFixed(1), status: v => analyzeTemp(v).st });
+
+  const cnt = {};
+  let tot = 0;
+  list.forEach(r => { const c = classify(r.values); if (c) { cnt[c[0].name] = (cnt[c[0].name] || 0) + 1; tot++; } });
+  const rows = Object.entries(cnt).sort((a, b) => b[1] - a[1]);
+  $("chart-src").innerHTML = tot
+    ? `<div class="bars">${rows.map(([nm, c]) => `<div><span class="nm">${esc(nm)}</span><span class="track"><span class="fill" style="display:block;width:${((c / tot) * 100).toFixed(1)}%"></span></span><span class="pct">${c} ครั้ง</span></div>`).join("")}</div>`
+    : `<p class="muted" style="margin:0">ยังไม่มีข้อมูล</p>`;
+}
+$("chart-range").onchange = renderCharts;
+$("chart-loc").onchange = renderCharts;
 
 /* ===== สถานที่ ===== */
 let gps = null;
@@ -369,10 +514,20 @@ const DEFAULT_DEVICE = "192.168.4.1";
 const canReachDevice = location.protocol !== "https:"; // เว็บ https เรียกเครื่องที่เป็น http ไม่ได้
 let apiBase = null;   // null = ยังไม่ได้ต่อเครื่อง
 let lastKey = null;
+let sawBusy = false;
 let mode = "";
 
 function setConn(kind, text) { $("conn-dot").className = "dot " + kind; $("conn-text").textContent = text; }
-function setLive(v) { $("live-ph").textContent = f(v.ph, 2); $("live-tds").textContent = fTds(v.tds); $("live-temp").textContent = f(v.temp, 1); }
+
+function setBusy(busy, sec, max) {
+  $("busy").hidden = !busy;
+  $("measure-btn").disabled = !!busy;
+  $("measure-label").textContent = busy ? "กำลังวัด…" : "เริ่มวัด";
+  if (busy) {
+    $("busy-text").textContent = `${sec} วินาที · รอนานสุด ${max} วินาที`;
+    $("busy-fill").style.width = Math.min(100, (sec / max) * 100) + "%";
+  }
+}
 
 async function getJson(url, opts, timeoutMs) {
   const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), timeoutMs || 3000);
@@ -395,23 +550,35 @@ async function findDevice() {
   return null;
 }
 
+function recordFromDevice(it, live) {
+  const known = it.epoch > 0;
+  const rec = newRecord(it.values, {
+    key: "dev-" + it.id, label: "#" + it.id,
+    time: known ? it.epoch * 1000 : Date.now(),
+    timeSource: known ? "device" : (live ? "phone" : "unknown"),
+    stable: it.stable, wait: it.wait
+  });
+  if (!live) { rec.location = ""; rec.gps = null; }   // วัดตอนมือถือไม่ได้ดูอยู่ ไม่รู้สถานที่
+  return rec;
+}
+
 async function poll() {
   try {
     const s = await getJson(apiBase + "/api/state");
-    setConn("on", "เชื่อมต่อเครื่องวัดแล้ว" + (apiBase ? " (" + apiBase.replace("http://", "") + ")" : ""));
+    setConn("on", "เชื่อมต่อเครื่องวัดแล้ว");
     setLive(s.live);
+    setBusy(s.busy, s.busy_s || 0, s.busy_max || 30);
+    if (s.busy) sawBusy = true;
     if (!s.time_set) fetch(apiBase + "/api/time?epoch=" + Math.floor(Date.now() / 1000), { method: "POST" }).catch(() => {});
     if (s.last) {
-      const key = s.boot + "-" + s.last.id;
+      const key = "dev-" + s.last.id;
       if (key !== lastKey) {
+        const fresh = lastKey !== null || sawBusy;     // เพิ่งวัดเสร็จตอนเปิดหน้านี้อยู่
         lastKey = key;
+        sawBusy = false;
         const old = records.find(h => h.key === key);
-        if (old) { renderReport(old); }
-        else addRecord(newRecord(s.last.values, {
-          key, label: "#" + s.last.id,
-          time: s.last.epoch ? s.last.epoch * 1000 : Date.now(),
-          timeSource: s.last.epoch ? "device" : "phone"
-        }));
+        if (old) { if (fresh) renderReport(old); }
+        else addRecord(recordFromDevice(s.last, fresh));
       }
     }
   } catch (e) {
@@ -420,9 +587,35 @@ async function poll() {
   setTimeout(poll, 1000);
 }
 
+async function syncDevice() {
+  if (apiBase === null) return;
+  $("sync-msg").textContent = "กำลังดึงข้อมูล…";
+  try {
+    const d = await getJson(apiBase + "/api/log", {}, 6000);
+    const items = d.items || [];
+    let added = 0;
+    items.forEach(it => {
+      const old = records.find(h => h.key === "dev-" + it.id);
+      if (old) {
+        if (it.epoch > 0 && old.timeSource === "unknown") { old.time = it.epoch * 1000; old.timeSource = "device"; }
+        return;
+      }
+      records.push(recordFromDevice(it, false));
+      added++;
+    });
+    saveRecords();
+    $("sync-msg").textContent = `เครื่องเก็บไว้ ${items.length} ครั้ง · ดึงมาเพิ่ม ${added} ครั้ง`;
+    renderHistory();
+    renderCharts();
+  } catch (e) {
+    $("sync-msg").textContent = "ดึงข้อมูลไม่สำเร็จ ลองใหม่อีกครั้ง";
+  }
+}
+
 async function webMeasure() {
   if (apiBase === null) { demoSend(); return; }
-  try { await getJson(apiBase + "/api/measure", { method: "POST" }, 8000); } catch (e) { setConn("off", "สั่งวัดไม่สำเร็จ"); }
+  setBusy(true, 0, 30);
+  try { await getJson(apiBase + "/api/measure", { method: "POST" }, 5000); } catch (e) { setBusy(false); setConn("off", "สั่งวัดไม่สำเร็จ"); }
 }
 
 /* ===== โหมดทดลอง ===== */
@@ -442,14 +635,16 @@ function enterDeviceMode(base) {
   apiBase = base;
   mode = "device";
   $("demo-panel").hidden = true;
+  $("dev-sync").hidden = false;
   renderEmpty();
   poll();
+  syncDevice();
 }
 
 function enterDemoMode() {
   if (mode === "demo") return;
   mode = "demo";
-  setConn("demo", "โหมดทดลอง (ไม่ได้ต่อเครื่องวัด)");
+  setConn("demo", "โหมดทดลอง");
   $("demo-panel").hidden = false;
   const sample = { ph: 7.62, tds: 184, temp: 29.4 };
   setLive(sample);
@@ -461,18 +656,26 @@ async function connect(manual) {
   const base = await findDevice();
   if (base !== null) { enterDeviceMode(base); return; }
   enterDemoMode();
-  if (manual) $("dev-msg").textContent = "ไม่พบเครื่องวัดที่ " + deviceAddr() + " ตรวจว่าคอม/มือถือต่อ WiFi WaterMeter อยู่";
+  if (manual) $("dev-msg").textContent = "ไม่พบเครื่องวัดที่ " + deviceAddr() + " ตรวจว่ามือถือต่อ WiFi WaterMeter อยู่";
   else if (canReachDevice) setTimeout(() => { if (mode === "demo") connect(false); }, 5000); // ลองหาใหม่เรื่อยๆ
 }
 
 /* ===== เริ่มทำงาน ===== */
-$("model-info").textContent = `โมเดลประเมินแหล่งน้ำ: Naive Bayes รุ่น ${MODEL.version} · ข้อมูลที่ใช้: ${MODEL.trained_on}` +
+$("model-info").textContent = `AI ประเมินแหล่งน้ำ: Naive Bayes รุ่น ${MODEL.version} · ข้อมูลที่ใช้: ${MODEL.trained_on}` +
   (MODEL.accuracy !== null ? ` · ความแม่นยำจากการทดสอบ ${Math.round(MODEL.accuracy * 100)}% (${MODEL.samples} ตัวอย่าง)` : " · ยังไม่ได้วัดความแม่นยำกับข้อมูลจริง");
 renderHistory();
-$("d-send").onclick = demoSend;
+renderCharts();
+$("measure-btn").onclick = webMeasure;
+$("sync-dev").onclick = syncDevice;
+$("clear-dev").onclick = async () => {
+  if (apiBase === null || !confirm("ลบผลตรวจที่เก็บในเครื่องวัดทั้งหมด? (ประวัติในมือถือยังอยู่)")) return;
+  try { await getJson(apiBase + "/api/log/clear", { method: "POST" }, 4000); $("sync-msg").textContent = "ล้างข้อมูลในเครื่องแล้ว"; }
+  catch (e) { $("sync-msg").textContent = "ล้างไม่สำเร็จ"; }
+};
 $("dev-row").hidden = !canReachDevice;
 $("dev-addr").value = deviceAddr();
 $("dev-connect").onclick = () => { store.set("wqm-device", $("dev-addr").value); connect(true); };
+showTab(store.get("wqm-tab", "measure"));
 
 if (canReachDevice) { setConn("", "กำลังค้นหาเครื่องวัด…"); connect(false); }
 else enterDemoMode();

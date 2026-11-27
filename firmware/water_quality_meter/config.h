@@ -28,6 +28,15 @@ const float TDS_MIN_MV      = 150.0;
 const float PH_MIN_MV       = 150.0;    // ที่ขา ESP32, ต่ำกว่านี้ = ไม่ได้ต่อโมดูล pH
 const float ADC_MAX_MV      = 3150.0;   // ใกล้เพดาน ADC = ค่าเชื่อไม่ได้
 
+// ================= วิธีวัดเมื่อกดปุ่ม (รอค่านิ่งแล้วเฉลี่ย) =================
+const unsigned long SAMPLE_MS      = 500;    // อ่านค่าทุก 0.5 วินาทีระหว่างวัด
+const int           STABLE_WINDOW  = 6;      // ใช้ 6 ค่าล่าสุด (3 วินาที) ตัดสินว่าค่านิ่ง
+const unsigned long MEASURE_MAX_MS = 30000;  // รอค่านิ่งนานสุด 30 วินาที แล้วใช้ค่าล่าสุด
+const float STABLE_PH   = 0.05;              // pH แกว่งไม่เกิน 0.05 = นิ่ง
+const float STABLE_TDS  = 0.03;              // TDS แกว่งไม่เกิน 3% (อย่างน้อย 3 ppm) = นิ่ง
+const float STABLE_TEMP = 0.3;               // อุณหภูมิแกว่งไม่เกิน 0.3 °C = นิ่ง
+const int   LOG_SIZE    = 80;                // เก็บผลตรวจล่าสุดในเครื่องกี่ครั้ง (ไม่หายเมื่อถอดปลั๊ก)
+
 // ================= WiFi (ESP32 ปล่อย WiFi เอง) =================
 const char *AP_SSID = "WaterMeter";
 const char *AP_PASS = "12345678";        // อย่างน้อย 8 ตัวอักษร
