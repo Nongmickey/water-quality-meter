@@ -1,15 +1,16 @@
 /*
  * ทดสอบบอร์ด TDS (TDS Meter V1.0) — ค่าวิ่งทุก 1 วินาที + กดปุ่มเขียว = วัดเฉลี่ย 10 วินาที
+ * ค่าดิบ ยังไม่คาลิเบรต (K = 1) แสดงแรงดันดิบที่ขา A เป็น mV
  *
- * ต่อสาย (เหมือนภาพ wiring-tds)
- *   บอร์ด TDS  + -> 3V3    - -> G    A -> 4.7k -> S ของ D33   (D33 -> 10µF + 104 ลง G)
+ * ต่อสาย (เหมือนภาพ wiring-breadboard: แถว 6 ของเบรดบอร์ด)
+ *   บอร์ด TDS  + -> 5V (หรือ 3V3)    - -> G    A -> 4.7k -> S ของ D34   (D34 -> 10µF + 104 ลง G)
  *   หัววัดเสียบช่องขาว 2 ขาของบอร์ด TDS
  *   หัววัดอุณหภูมิ NTC (ถ้ามี): 3V3 -> 4.7k -> D32, NTC ระหว่าง D32 กับ G (ไม่ได้ต่อ = ใช้ 25 °C)
  *   ปุ่มเขียว: ขั้ว 23 -> S ของ D15, ขั้ว 24 -> G
  *   LCD: SDA -> D21, SCL -> D22, VCC -> VIN, GND -> G
  *
  * ค่าที่ควรเห็น
- *   หัววัดอยู่ในอากาศ : TDS <60 ppm   (A: 0 V)
+ *   หัววัดอยู่ในอากาศ : TDS <60 ppm   (A ประมาณ 142 mV = ไฟจริง 0 V)
  *   น้ำประปา          : ประมาณ 100-300 ppm
  *   น้ำเกลือ          : สูงกว่าน้ำประปามาก
  * หมายเหตุ: ESP32 อ่านแรงดันต่ำสุดได้ประมาณ 142 mV (= 0 V จริง) จึงวัด TDS ต่ำกว่าประมาณ 60 ppm ไม่ได้
@@ -20,10 +21,10 @@
 #include <LiquidCrystal_I2C.h>
 #include <math.h>
 
-const int   PIN_TDS    = 33;      // ขา A ของบอร์ด TDS (ผ่าน 4.7k) ช่องอื่นที่ใช้ได้: 34, 36 (VP), 39 (VN)
+const int   PIN_TDS    = 34;      // ขา A ของบอร์ด TDS (ผ่าน 4.7k) ถ้าเสียบช่องอื่นแก้ตรงนี้: 33, 36 (VP), 39 (VN)
 const int   PIN_TEMP   = 32;      // NTC (ถ้าไม่ได้ต่อ จะใช้ 25 °C)
 const int   PIN_BUTTON = 15;
-const float TDS_K      = 1.0;     // ค่าปรับเทียบ: ถ้ารู้ค่าจริง K = ค่าจริง / ค่าที่วัดได้
+const float TDS_K      = 1.0;     // ค่าดิบ ยังไม่คาลิเบรต (ภายหลัง: K = ค่าจริง / ค่าที่วัดได้)
 const float FLOOR_MV   = 150.0;   // ต่ำกว่านี้ = ไฟจริง 0 V (ESP32 อ่านต่ำสุดได้ประมาณ 142 mV)
 const float NTC_SERIES = 4700.0;
 const float NTC_R25    = 10000.0;
@@ -83,7 +84,7 @@ void showLive() {
 
   lcdLine(0, "TDS TEST T:" + (isnan(t) ? String("25(set)") : String(t, 1) + "C"));
   lcdLine(1, "TDS : " + tdsText(tds));
-  lcdLine(2, mv < FLOOR_MV ? String("A   : 0 V (min)") : "A   : " + String(mv / 1000.0, 3) + " V");
+  lcdLine(2, "A   : " + String(mv) + " mV" + (mv < FLOOR_MV ? " (=0V)" : ""));
   Serial.printf("TDS: %.0f ppm   A: %d mV   T: %.1f C\n", tds, mv, tUse);
 }
 
