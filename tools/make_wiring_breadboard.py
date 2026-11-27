@@ -216,6 +216,41 @@ for r, n, lab, c in [(6, "1", "TDS", "#0b8fa0"), (13, "2", "pH", GREEN), (21, "3
     badge(624, Y(r) + 30, n, c)
     text(644, Y(r) + 35, lab, 13, c, "start", True, True)
 
+# ---------- ป้ายบอกค่าชิ้นส่วน ----------
+CAP, CER, RES = "#1d3d75", "#b36b00", "#6b4f1d"
+
+
+def mid(p1, p2):
+    return ((p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2)
+
+
+def tag(x, y, t, target, color):
+    """ป้ายค่าชิ้นส่วนที่ขอบซ้าย/ขวา พร้อมเส้นชี้ไปที่ตัวชิ้นส่วน"""
+    tx, ty = target
+    sx = x + 4 if x < tx else x - 4
+    A(f'<line x1="{sx}" y1="{y-5}" x2="{tx}" y2="{ty}" stroke="{color}" stroke-width="1.5" stroke-dasharray="4 3"/>')
+    A(f'<circle cx="{tx}" cy="{ty}" r="3" fill="{color}"/>')
+    text(x, y, t, 14, color, "end" if x < tx else "start", True, True)
+
+
+# 100µF คร่อมรางไฟ
+tag(346, 166, "100µF", mid(hole("L+", 3), hole("L-", 3)), CAP)
+text(803, 140, "100µF", 14, CAP, "start", True, True)
+# TDS แถว 6
+tag(346, 248, "104", mid(hole("a", 6), hole("L-", 6)), CER)
+tag(346, 272, "10µF", mid(hole("b", 6), hole("L-", 7)), CAP)
+# pH แถว 13
+tag(346, 350, "10µF", mid(hole("c", 13), hole("L-", 10)), CAP)
+tag(346, 410, "104", mid(hole("b", 13), hole("L-", 12)), CER)
+tag(346, 440, "4.7kΩ", mid(hole("a", 13), hole("L-", 16)), RES)
+# อุณหภูมิ แถว 21
+tag(346, 556, "104", mid(hole("b", 21), hole("L-", 20)), CER)
+tag(346, 606, "4.7kΩ", mid(hole("L+", 22), hole("a", 21)), RES)
+tag(346, 644, "10µF", mid(hole("c", 21), hole("L-", 24)), CAP)
+# ตัวต้านทานคร่อมร่องกลาง
+for r in (6, 13):
+    text(576, Y(r) - 12, "4.7kΩ", 12, RES, "middle", True, True)
+
 # ---------- คำอธิบาย ----------
 y = 905
 notes = [
